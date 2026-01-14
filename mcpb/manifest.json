@@ -1,0 +1,51 @@
+{
+  "manifest_version": "0.3",
+  "name": "che-things-mcp",
+  "display_name": "Things 3 Task Manager",
+  "version": "0.1.0",
+  "description": "Native AppleScript integration for Things 3 task management app",
+  "long_description": "A Swift-based MCP server providing 15 tools for managing Things 3 tasks and projects. Features include inbox, today, upcoming, anytime, someday, and logbook access, plus full CRUD operations for todos and projects. Uses native AppleScript for reliable integration. Requires macOS 13.0 or later and Things 3 installed.",
+  "author": {
+    "name": "Che Cheng",
+    "url": "https://github.com/kiki830621"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kiki830621/che-things-mcp.git"
+  },
+  "homepage": "https://github.com/kiki830621/che-things-mcp",
+  "support": "https://github.com/kiki830621/che-things-mcp/issues",
+  "icon": "icon.png",
+  "keywords": ["things3", "tasks", "todo", "gtd", "productivity", "macos", "applescript"],
+  "license": "MIT",
+  "privacy_policies": ["https://github.com/kiki830621/che-things-mcp/blob/main/mcpb/PRIVACY.md"],
+  "server": {
+    "type": "binary",
+    "entry_point": "server/CheThingsMCP",
+    "mcp_config": {
+      "command": "${__dirname}/server/CheThingsMCP",
+      "args": [],
+      "env": {}
+    }
+  },
+  "tools": [
+    { "name": "get_inbox", "description": "Get all to-dos in the Inbox" },
+    { "name": "get_today", "description": "Get all to-dos scheduled for Today" },
+    { "name": "get_upcoming", "description": "Get all to-dos in the Upcoming list" },
+    { "name": "get_anytime", "description": "Get all to-dos in the Anytime list" },
+    { "name": "get_someday", "description": "Get all to-dos in the Someday list" },
+    { "name": "get_logbook", "description": "Get completed to-dos from the Logbook" },
+    { "name": "get_projects", "description": "Get all projects with details" },
+    { "name": "add_todo", "description": "Create a new to-do with optional scheduling" },
+    { "name": "update_todo", "description": "Update an existing to-do" },
+    { "name": "complete_todo", "description": "Mark a to-do as completed or incomplete" },
+    { "name": "delete_todo", "description": "Delete a to-do (moves to Trash)" },
+    { "name": "search_todos", "description": "Search for to-dos by name or notes" },
+    { "name": "add_project", "description": "Create a new project" },
+    { "name": "update_project", "description": "Update an existing project" },
+    { "name": "delete_project", "description": "Delete a project (moves to Trash)" }
+  ],
+  "compatibility": {
+    "platforms": ["darwin"]
+  }
+}

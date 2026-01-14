@@ -1,0 +1,17 @@
+# Build artifacts
+.build/
+.swiftpm/
+*.xcodeproj/
+*.xcworkspace/
+
+# DerivedData
+DerivedData/
+
+# Package manager
+Package.resolved
+
+# MCPB package (generated)
+mcpb/*.mcpb
+
+# macOS
+.DS_Store
