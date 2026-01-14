@@ -17,7 +17,7 @@ class CheThingsMCPServer {
         // Create server with tools capability
         server = Server(
             name: "che-things-mcp",
-            version: "0.1.0",
+            version: "0.2.0",
             capabilities: .init(tools: .init())
         )
 
@@ -303,6 +303,211 @@ class CheThingsMCPServer {
                     "required": .array([.string("id")])
                 ]),
                 annotations: .init(readOnlyHint: false, destructiveHint: true, openWorldHint: false)
+            ),
+
+            // === Areas & Tags (2) ===
+            Tool(
+                name: "get_areas",
+                description: "Get all areas. Areas are used to organize projects and to-dos by life areas (e.g., Work, Personal).",
+                inputSchema: .object([
+                    "type": .string("object"),
+                    "properties": .object([:])
+                ]),
+                annotations: .init(readOnlyHint: true, openWorldHint: false)
+            ),
+            Tool(
+                name: "get_tags",
+                description: "Get all tags. Tags are labels that can be applied to to-dos and projects.",
+                inputSchema: .object([
+                    "type": .string("object"),
+                    "properties": .object([:])
+                ]),
+                annotations: .init(readOnlyHint: true, openWorldHint: false)
+            ),
+
+            // === Move Operations (2) ===
+            Tool(
+                name: "move_todo",
+                description: "Move a to-do to a different list or project.",
+                inputSchema: .object([
+                    "type": .string("object"),
+                    "properties": .object([
+                        "id": .object([
+                            "type": .string("string"),
+                            "description": .string("The to-do identifier")
+                        ]),
+                        "to_list": .object([
+                            "type": .string("string"),
+                            "description": .string("Target list: 'Inbox', 'Today', 'Anytime', 'Someday', 'Trash'")
+                        ]),
+                        "to_project": .object([
+                            "type": .string("string"),
+                            "description": .string("Target project name")
+                        ])
+                    ]),
+                    "required": .array([.string("id")])
+                ]),
+                annotations: .init(readOnlyHint: false, destructiveHint: false, openWorldHint: false)
+            ),
+            Tool(
+                name: "move_project",
+                description: "Move a project to a different area.",
+                inputSchema: .object([
+                    "type": .string("object"),
+                    "properties": .object([
+                        "id": .object([
+                            "type": .string("string"),
+                            "description": .string("The project identifier")
+                        ]),
+                        "to_area": .object([
+                            "type": .string("string"),
+                            "description": .string("Target area name")
+                        ])
+                    ]),
+                    "required": .array([.string("id"), .string("to_area")])
+                ]),
+                annotations: .init(readOnlyHint: false, destructiveHint: false, openWorldHint: false)
+            ),
+
+            // === UI Operations (4) ===
+            Tool(
+                name: "show_todo",
+                description: "Show a to-do in the Things 3 app (brings it into view).",
+                inputSchema: .object([
+                    "type": .string("object"),
+                    "properties": .object([
+                        "id": .object([
+                            "type": .string("string"),
+                            "description": .string("The to-do identifier")
+                        ])
+                    ]),
+                    "required": .array([.string("id")])
+                ]),
+                annotations: .init(readOnlyHint: true, openWorldHint: true)
+            ),
+            Tool(
+                name: "show_project",
+                description: "Show a project in the Things 3 app (brings it into view).",
+                inputSchema: .object([
+                    "type": .string("object"),
+                    "properties": .object([
+                        "id": .object([
+                            "type": .string("string"),
+                            "description": .string("The project identifier")
+                        ])
+                    ]),
+                    "required": .array([.string("id")])
+                ]),
+                annotations: .init(readOnlyHint: true, openWorldHint: true)
+            ),
+            Tool(
+                name: "show_list",
+                description: "Show a list in the Things 3 app (e.g., Inbox, Today, Upcoming).",
+                inputSchema: .object([
+                    "type": .string("object"),
+                    "properties": .object([
+                        "name": .object([
+                            "type": .string("string"),
+                            "description": .string("The list name: 'Inbox', 'Today', 'Upcoming', 'Anytime', 'Someday', 'Logbook', 'Trash'")
+                        ])
+                    ]),
+                    "required": .array([.string("name")])
+                ]),
+                annotations: .init(readOnlyHint: true, openWorldHint: true)
+            ),
+            Tool(
+                name: "show_quick_entry",
+                description: "Open the Quick Entry panel in Things 3 with optional pre-filled content.",
+                inputSchema: .object([
+                    "type": .string("object"),
+                    "properties": .object([
+                        "name": .object([
+                            "type": .string("string"),
+                            "description": .string("Optional pre-filled to-do name")
+                        ]),
+                        "notes": .object([
+                            "type": .string("string"),
+                            "description": .string("Optional pre-filled notes")
+                        ])
+                    ])
+                ]),
+                annotations: .init(readOnlyHint: true, openWorldHint: true)
+            ),
+
+            // === Utility Operations (2) ===
+            Tool(
+                name: "empty_trash",
+                description: "Permanently delete all items in the Trash. This action cannot be undone.",
+                inputSchema: .object([
+                    "type": .string("object"),
+                    "properties": .object([:])
+                ]),
+                annotations: .init(readOnlyHint: false, destructiveHint: true, openWorldHint: false)
+            ),
+            Tool(
+                name: "get_selected_todos",
+                description: "Get the currently selected to-dos in the Things 3 app.",
+                inputSchema: .object([
+                    "type": .string("object"),
+                    "properties": .object([:])
+                ]),
+                annotations: .init(readOnlyHint: true, openWorldHint: true)
+            ),
+
+            // === Advanced Queries (3) ===
+            Tool(
+                name: "get_todos_in_project",
+                description: "Get all to-dos in a specific project.",
+                inputSchema: .object([
+                    "type": .string("object"),
+                    "properties": .object([
+                        "project_id": .object([
+                            "type": .string("string"),
+                            "description": .string("The project identifier")
+                        ]),
+                        "project_name": .object([
+                            "type": .string("string"),
+                            "description": .string("The project name (alternative to project_id)")
+                        ])
+                    ])
+                ]),
+                annotations: .init(readOnlyHint: true, openWorldHint: false)
+            ),
+            Tool(
+                name: "get_todos_in_area",
+                description: "Get all to-dos directly in a specific area (not in projects).",
+                inputSchema: .object([
+                    "type": .string("object"),
+                    "properties": .object([
+                        "area_id": .object([
+                            "type": .string("string"),
+                            "description": .string("The area identifier")
+                        ]),
+                        "area_name": .object([
+                            "type": .string("string"),
+                            "description": .string("The area name (alternative to area_id)")
+                        ])
+                    ])
+                ]),
+                annotations: .init(readOnlyHint: true, openWorldHint: false)
+            ),
+            Tool(
+                name: "get_projects_in_area",
+                description: "Get all projects in a specific area.",
+                inputSchema: .object([
+                    "type": .string("object"),
+                    "properties": .object([
+                        "area_id": .object([
+                            "type": .string("string"),
+                            "description": .string("The area identifier")
+                        ]),
+                        "area_name": .object([
+                            "type": .string("string"),
+                            "description": .string("The area name (alternative to area_id)")
+                        ])
+                    ])
+                ]),
+                annotations: .init(readOnlyHint: true, openWorldHint: false)
             )
         ]
     }
@@ -363,6 +568,42 @@ class CheThingsMCPServer {
                 result = try await handleUpdateProject(params.arguments)
             case "delete_project":
                 result = try await handleDeleteProject(params.arguments)
+
+            // Areas & Tags
+            case "get_areas":
+                result = try await handleGetAreas()
+            case "get_tags":
+                result = try await handleGetTags()
+
+            // Move Operations
+            case "move_todo":
+                result = try await handleMoveTodo(params.arguments)
+            case "move_project":
+                result = try await handleMoveProject(params.arguments)
+
+            // UI Operations
+            case "show_todo":
+                result = try await handleShowTodo(params.arguments)
+            case "show_project":
+                result = try await handleShowProject(params.arguments)
+            case "show_list":
+                result = try await handleShowList(params.arguments)
+            case "show_quick_entry":
+                result = try await handleShowQuickEntry(params.arguments)
+
+            // Utility Operations
+            case "empty_trash":
+                result = try await handleEmptyTrash()
+            case "get_selected_todos":
+                result = try await handleGetSelectedTodos()
+
+            // Advanced Queries
+            case "get_todos_in_project":
+                result = try await handleGetTodosInProject(params.arguments)
+            case "get_todos_in_area":
+                result = try await handleGetTodosInArea(params.arguments)
+            case "get_projects_in_area":
+                result = try await handleGetProjectsInArea(params.arguments)
 
             default:
                 return CallTool.Result(content: [.text("Unknown tool: \(params.name)")], isError: true)
@@ -617,6 +858,188 @@ class CheThingsMCPServer {
         """
     }
 
+    // MARK: - Areas & Tags Handlers
+
+    private func handleGetAreas() async throws -> String {
+        let areas = try await thingsManager.getAreas()
+        return formatAreasAsJSON(areas)
+    }
+
+    private func handleGetTags() async throws -> String {
+        let tags = try await thingsManager.getTags()
+        return formatTagsAsJSON(tags)
+    }
+
+    // MARK: - Move Operation Handlers
+
+    private func handleMoveTodo(_ arguments: [String: Value]?) async throws -> String {
+        guard let args = arguments,
+              case .string(let id) = args["id"] else {
+            throw ThingsError.invalidParameter("id is required")
+        }
+
+        var toList: String? = nil
+        if case .string(let l) = args["to_list"] { toList = l }
+
+        var toProject: String? = nil
+        if case .string(let p) = args["to_project"] { toProject = p }
+
+        try await thingsManager.moveTodo(id: id, toList: toList, toProject: toProject)
+
+        let destination = toProject ?? toList ?? "unknown"
+        return """
+        {
+            "success": true,
+            "message": "To-do moved to \(destination)"
+        }
+        """
+    }
+
+    private func handleMoveProject(_ arguments: [String: Value]?) async throws -> String {
+        guard let args = arguments,
+              case .string(let id) = args["id"],
+              case .string(let toArea) = args["to_area"] else {
+            throw ThingsError.invalidParameter("id and to_area are required")
+        }
+
+        try await thingsManager.moveProject(id: id, toArea: toArea)
+
+        return """
+        {
+            "success": true,
+            "message": "Project moved to area '\(toArea)'"
+        }
+        """
+    }
+
+    // MARK: - UI Operation Handlers
+
+    private func handleShowTodo(_ arguments: [String: Value]?) async throws -> String {
+        guard let args = arguments,
+              case .string(let id) = args["id"] else {
+            throw ThingsError.invalidParameter("id is required")
+        }
+
+        try await thingsManager.showTodo(id: id)
+
+        return """
+        {
+            "success": true,
+            "message": "To-do is now visible in Things 3"
+        }
+        """
+    }
+
+    private func handleShowProject(_ arguments: [String: Value]?) async throws -> String {
+        guard let args = arguments,
+              case .string(let id) = args["id"] else {
+            throw ThingsError.invalidParameter("id is required")
+        }
+
+        try await thingsManager.showProject(id: id)
+
+        return """
+        {
+            "success": true,
+            "message": "Project is now visible in Things 3"
+        }
+        """
+    }
+
+    private func handleShowList(_ arguments: [String: Value]?) async throws -> String {
+        guard let args = arguments,
+              case .string(let name) = args["name"] else {
+            throw ThingsError.invalidParameter("name is required")
+        }
+
+        try await thingsManager.showList(name: name)
+
+        return """
+        {
+            "success": true,
+            "message": "'\(name)' list is now visible in Things 3"
+        }
+        """
+    }
+
+    private func handleShowQuickEntry(_ arguments: [String: Value]?) async throws -> String {
+        let args = arguments ?? [:]
+
+        var name: String? = nil
+        if case .string(let n) = args["name"] { name = n }
+
+        var notes: String? = nil
+        if case .string(let n) = args["notes"] { notes = n }
+
+        try await thingsManager.showQuickEntry(name: name, notes: notes)
+
+        return """
+        {
+            "success": true,
+            "message": "Quick Entry panel opened"
+        }
+        """
+    }
+
+    // MARK: - Utility Operation Handlers
+
+    private func handleEmptyTrash() async throws -> String {
+        try await thingsManager.emptyTrash()
+
+        return """
+        {
+            "success": true,
+            "message": "Trash has been emptied"
+        }
+        """
+    }
+
+    private func handleGetSelectedTodos() async throws -> String {
+        let todos = try await thingsManager.getSelectedTodos()
+        return formatTodosAsJSON(todos)
+    }
+
+    // MARK: - Advanced Query Handlers
+
+    private func handleGetTodosInProject(_ arguments: [String: Value]?) async throws -> String {
+        let args = arguments ?? [:]
+
+        var projectId: String? = nil
+        if case .string(let id) = args["project_id"] { projectId = id }
+
+        var projectName: String? = nil
+        if case .string(let name) = args["project_name"] { projectName = name }
+
+        let todos = try await thingsManager.getTodosInProject(projectId: projectId, projectName: projectName)
+        return formatTodosAsJSON(todos)
+    }
+
+    private func handleGetTodosInArea(_ arguments: [String: Value]?) async throws -> String {
+        let args = arguments ?? [:]
+
+        var areaId: String? = nil
+        if case .string(let id) = args["area_id"] { areaId = id }
+
+        var areaName: String? = nil
+        if case .string(let name) = args["area_name"] { areaName = name }
+
+        let todos = try await thingsManager.getTodosInArea(areaId: areaId, areaName: areaName)
+        return formatTodosAsJSON(todos)
+    }
+
+    private func handleGetProjectsInArea(_ arguments: [String: Value]?) async throws -> String {
+        let args = arguments ?? [:]
+
+        var areaId: String? = nil
+        if case .string(let id) = args["area_id"] { areaId = id }
+
+        var areaName: String? = nil
+        if case .string(let name) = args["area_name"] { areaName = name }
+
+        let projects = try await thingsManager.getProjectsInArea(areaId: areaId, areaName: areaName)
+        return formatProjectsAsJSON(projects)
+    }
+
     // MARK: - JSON Formatting Helpers
 
     private func formatTodosAsJSON(_ todos: [Todo]) -> String {
@@ -659,6 +1082,28 @@ class CheThingsMCPServer {
         guard let data = try? encoder.encode(project),
               let json = String(data: data, encoding: .utf8) else {
             return "{}"
+        }
+        return json
+    }
+
+    private func formatAreasAsJSON(_ areas: [Area]) -> String {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+
+        guard let data = try? encoder.encode(areas),
+              let json = String(data: data, encoding: .utf8) else {
+            return "[]"
+        }
+        return json
+    }
+
+    private func formatTagsAsJSON(_ tags: [Tag]) -> String {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+
+        guard let data = try? encoder.encode(tags),
+              let json = String(data: data, encoding: .utf8) else {
+            return "[]"
         }
         return json
     }

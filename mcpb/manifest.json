@@ -2,9 +2,9 @@
   "manifest_version": "0.3",
   "name": "che-things-mcp",
   "display_name": "Things 3 Task Manager",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Native AppleScript integration for Things 3 task management app",
-  "long_description": "A Swift-based MCP server providing 15 tools for managing Things 3 tasks and projects. Features include inbox, today, upcoming, anytime, someday, and logbook access, plus full CRUD operations for todos and projects. Uses native AppleScript for reliable integration. Requires macOS 13.0 or later and Things 3 installed.",
+  "long_description": "A Swift-based MCP server providing 28 tools for managing Things 3 tasks, projects, areas, and tags. Features include inbox, today, upcoming, anytime, someday, and logbook access, full CRUD operations for todos and projects, move operations, UI controls, and advanced queries. Uses native AppleScript for reliable integration. Requires macOS 13.0 or later and Things 3 installed.",
   "author": {
     "name": "Che Cheng",
     "url": "https://github.com/kiki830621"
@@ -43,7 +43,20 @@
     { "name": "search_todos", "description": "Search for to-dos by name or notes" },
     { "name": "add_project", "description": "Create a new project" },
     { "name": "update_project", "description": "Update an existing project" },
-    { "name": "delete_project", "description": "Delete a project (moves to Trash)" }
+    { "name": "delete_project", "description": "Delete a project (moves to Trash)" },
+    { "name": "get_areas", "description": "Get all areas" },
+    { "name": "get_tags", "description": "Get all tags" },
+    { "name": "move_todo", "description": "Move a to-do to a different list or project" },
+    { "name": "move_project", "description": "Move a project to a different area" },
+    { "name": "show_todo", "description": "Show a to-do in the Things 3 app" },
+    { "name": "show_project", "description": "Show a project in the Things 3 app" },
+    { "name": "show_list", "description": "Show a list in the Things 3 app" },
+    { "name": "show_quick_entry", "description": "Open the Quick Entry panel" },
+    { "name": "empty_trash", "description": "Permanently delete all items in Trash" },
+    { "name": "get_selected_todos", "description": "Get currently selected to-dos" },
+    { "name": "get_todos_in_project", "description": "Get all to-dos in a specific project" },
+    { "name": "get_todos_in_area", "description": "Get all to-dos in a specific area" },
+    { "name": "get_projects_in_area", "description": "Get all projects in a specific area" }
   ],
   "compatibility": {
     "platforms": ["darwin"]

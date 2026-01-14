@@ -469,6 +469,341 @@ actor ThingsManager {
         _ = try executeAppleScript(script)
     }
 
+    // MARK: - Areas
+
+    func getAreas() async throws -> [Area] {
+        let script = """
+        tell application "Things3"
+            set output to ""
+            repeat with a in areas
+                set areaId to id of a
+                set areaName to name of a
+                set areaTags to tag names of a
+                set output to output & areaId & "|||" & areaName & "|||" & areaTags & "###"
+            end repeat
+            return output
+        end tell
+        """
+
+        let result = try executeAppleScript(script)
+        return parseAreasFromOutput(result)
+    }
+
+    // MARK: - Tags
+
+    func getTags() async throws -> [Tag] {
+        let script = """
+        tell application "Things3"
+            set output to ""
+            repeat with t in tags
+                set tagId to id of t
+                set tagName to name of t
+                set output to output & tagId & "|||" & tagName & "###"
+            end repeat
+            return output
+        end tell
+        """
+
+        let result = try executeAppleScript(script)
+        return parseTagsFromOutput(result)
+    }
+
+    // MARK: - Move Operations
+
+    func moveTodo(id: String, toList: String? = nil, toProject: String? = nil) async throws {
+        var moveCommand = ""
+
+        if let projectName = toProject {
+            moveCommand = "move to do id \"\(id)\" to project \"\(escapeForAppleScript(projectName))\""
+        } else if let listName = toList {
+            moveCommand = "move to do id \"\(id)\" to list \"\(listName)\""
+        } else {
+            throw ThingsError.invalidParameter("Either toList or toProject must be specified")
+        }
+
+        let script = """
+        tell application "Things3"
+            \(moveCommand)
+        end tell
+        """
+        _ = try executeAppleScript(script)
+    }
+
+    func moveProject(id: String, toArea: String) async throws {
+        let script = """
+        tell application "Things3"
+            move project id "\(id)" to area "\(escapeForAppleScript(toArea))"
+        end tell
+        """
+        _ = try executeAppleScript(script)
+    }
+
+    // MARK: - UI Operations
+
+    func showTodo(id: String) async throws {
+        let script = """
+        tell application "Things3"
+            show to do id "\(id)"
+        end tell
+        """
+        _ = try executeAppleScript(script)
+    }
+
+    func showProject(id: String) async throws {
+        let script = """
+        tell application "Things3"
+            show project id "\(id)"
+        end tell
+        """
+        _ = try executeAppleScript(script)
+    }
+
+    func showList(name: String) async throws {
+        let script = """
+        tell application "Things3"
+            show list "\(name)"
+        end tell
+        """
+        _ = try executeAppleScript(script)
+    }
+
+    func showQuickEntry(
+        name: String? = nil,
+        notes: String? = nil,
+        when: String? = nil,
+        listName: String? = nil
+    ) async throws {
+        var properties: [String] = []
+
+        if let name = name {
+            properties.append("name:\"\(escapeForAppleScript(name))\"")
+        }
+        if let notes = notes {
+            properties.append("notes:\"\(escapeForAppleScript(notes))\"")
+        }
+
+        var showCommand = "show quick entry panel"
+        if !properties.isEmpty {
+            showCommand += " with properties {\(properties.joined(separator: ", "))}"
+        }
+
+        let script = """
+        tell application "Things3"
+            \(showCommand)
+        end tell
+        """
+        _ = try executeAppleScript(script)
+    }
+
+    // MARK: - Utility Operations
+
+    func emptyTrash() async throws {
+        let script = """
+        tell application "Things3"
+            empty trash
+        end tell
+        """
+        _ = try executeAppleScript(script)
+    }
+
+    func getSelectedTodos() async throws -> [Todo] {
+        let script = """
+        tell application "Things3"
+            set output to ""
+            set selectedItems to selected to dos
+            repeat with t in selectedItems
+                set todoId to id of t
+                set todoName to name of t
+                set todoNotes to notes of t
+                set todoStatus to status of t
+                set todoTags to tag names of t
+
+                set todoDueDate to ""
+                try
+                    set todoDueDate to due date of t as string
+                end try
+
+                set todoScheduledDate to ""
+                try
+                    set todoScheduledDate to activation date of t as string
+                end try
+
+                set todoCompletionDate to ""
+                try
+                    set todoCompletionDate to completion date of t as string
+                end try
+
+                set todoProject to ""
+                try
+                    set todoProject to name of project of t
+                end try
+
+                set todoArea to ""
+                try
+                    set todoArea to name of area of t
+                end try
+
+                set output to output & todoId & "|||" & todoName & "|||" & todoNotes & "|||" & todoStatus & "|||" & todoTags & "|||" & todoDueDate & "|||" & todoScheduledDate & "|||" & todoCompletionDate & "|||" & todoProject & "|||" & todoArea & "###"
+            end repeat
+            return output
+        end tell
+        """
+
+        let result = try executeAppleScript(script)
+        return parseTodosFromOutput(result)
+    }
+
+    // MARK: - Advanced Queries
+
+    func getTodosInProject(projectId: String? = nil, projectName: String? = nil) async throws -> [Todo] {
+        var projectRef = ""
+        if let id = projectId {
+            projectRef = "project id \"\(id)\""
+        } else if let name = projectName {
+            projectRef = "project \"\(escapeForAppleScript(name))\""
+        } else {
+            throw ThingsError.invalidParameter("Either projectId or projectName must be specified")
+        }
+
+        let script = """
+        tell application "Things3"
+            set output to ""
+            set todoItems to to dos of \(projectRef)
+            repeat with t in todoItems
+                set todoId to id of t
+                set todoName to name of t
+                set todoNotes to notes of t
+                set todoStatus to status of t
+                set todoTags to tag names of t
+
+                set todoDueDate to ""
+                try
+                    set todoDueDate to due date of t as string
+                end try
+
+                set todoScheduledDate to ""
+                try
+                    set todoScheduledDate to activation date of t as string
+                end try
+
+                set todoCompletionDate to ""
+                try
+                    set todoCompletionDate to completion date of t as string
+                end try
+
+                set todoProject to ""
+                try
+                    set todoProject to name of project of t
+                end try
+
+                set todoArea to ""
+                try
+                    set todoArea to name of area of t
+                end try
+
+                set output to output & todoId & "|||" & todoName & "|||" & todoNotes & "|||" & todoStatus & "|||" & todoTags & "|||" & todoDueDate & "|||" & todoScheduledDate & "|||" & todoCompletionDate & "|||" & todoProject & "|||" & todoArea & "###"
+            end repeat
+            return output
+        end tell
+        """
+
+        let result = try executeAppleScript(script)
+        return parseTodosFromOutput(result)
+    }
+
+    func getTodosInArea(areaId: String? = nil, areaName: String? = nil) async throws -> [Todo] {
+        var areaRef = ""
+        if let id = areaId {
+            areaRef = "area id \"\(id)\""
+        } else if let name = areaName {
+            areaRef = "area \"\(escapeForAppleScript(name))\""
+        } else {
+            throw ThingsError.invalidParameter("Either areaId or areaName must be specified")
+        }
+
+        let script = """
+        tell application "Things3"
+            set output to ""
+            set todoItems to to dos of \(areaRef)
+            repeat with t in todoItems
+                set todoId to id of t
+                set todoName to name of t
+                set todoNotes to notes of t
+                set todoStatus to status of t
+                set todoTags to tag names of t
+
+                set todoDueDate to ""
+                try
+                    set todoDueDate to due date of t as string
+                end try
+
+                set todoScheduledDate to ""
+                try
+                    set todoScheduledDate to activation date of t as string
+                end try
+
+                set todoCompletionDate to ""
+                try
+                    set todoCompletionDate to completion date of t as string
+                end try
+
+                set todoProject to ""
+                try
+                    set todoProject to name of project of t
+                end try
+
+                set todoArea to ""
+                try
+                    set todoArea to name of area of t
+                end try
+
+                set output to output & todoId & "|||" & todoName & "|||" & todoNotes & "|||" & todoStatus & "|||" & todoTags & "|||" & todoDueDate & "|||" & todoScheduledDate & "|||" & todoCompletionDate & "|||" & todoProject & "|||" & todoArea & "###"
+            end repeat
+            return output
+        end tell
+        """
+
+        let result = try executeAppleScript(script)
+        return parseTodosFromOutput(result)
+    }
+
+    func getProjectsInArea(areaId: String? = nil, areaName: String? = nil) async throws -> [Project] {
+        var areaRef = ""
+        if let id = areaId {
+            areaRef = "area id \"\(id)\""
+        } else if let name = areaName {
+            areaRef = "area \"\(escapeForAppleScript(name))\""
+        } else {
+            throw ThingsError.invalidParameter("Either areaId or areaName must be specified")
+        }
+
+        let script = """
+        tell application "Things3"
+            set output to ""
+            repeat with p in projects of \(areaRef)
+                set projId to id of p
+                set projName to name of p
+                set projNotes to notes of p
+                set projStatus to status of p
+                set projTags to tag names of p
+
+                set projArea to ""
+                try
+                    set projArea to name of area of p
+                end try
+
+                set projTodoCount to count of to dos of p
+
+                set output to output & projId & "|||" & projName & "|||" & projNotes & "|||" & projStatus & "|||" & projTags & "|||" & projArea & "|||" & projTodoCount & "###"
+            end repeat
+            return output
+        end tell
+        """
+
+        let result = try executeAppleScript(script)
+        return parseProjectsFromOutput(result)
+    }
+
     // MARK: - Helper Methods
 
     private func escapeForAppleScript(_ string: String) -> String {
@@ -534,6 +869,37 @@ actor ThingsManager {
                 tagNames: parts[4].isEmpty ? [] : parts[4].components(separatedBy: ", "),
                 areaName: parts[5].isEmpty ? nil : parts[5],
                 todoCount: Int(parts[6]) ?? 0
+            )
+        }
+    }
+
+    private func parseAreasFromOutput(_ output: String) -> [Area] {
+        guard !output.isEmpty else { return [] }
+
+        let areaStrings = output.components(separatedBy: "###").filter { !$0.isEmpty }
+        return areaStrings.compactMap { areaString -> Area? in
+            let parts = areaString.components(separatedBy: "|||")
+            guard parts.count >= 3 else { return nil }
+
+            return Area(
+                id: parts[0],
+                name: parts[1],
+                tagNames: parts[2].isEmpty ? [] : parts[2].components(separatedBy: ", ")
+            )
+        }
+    }
+
+    private func parseTagsFromOutput(_ output: String) -> [Tag] {
+        guard !output.isEmpty else { return [] }
+
+        let tagStrings = output.components(separatedBy: "###").filter { !$0.isEmpty }
+        return tagStrings.compactMap { tagString -> Tag? in
+            let parts = tagString.components(separatedBy: "|||")
+            guard parts.count >= 2 else { return nil }
+
+            return Tag(
+                id: parts[0],
+                name: parts[1]
             )
         }
     }

@@ -4,7 +4,7 @@ A Swift-based MCP (Model Context Protocol) server for [Things 3](https://culture
 
 ## Features
 
-- **15 tools** for comprehensive Things 3 management
+- **28 tools** for comprehensive Things 3 management
 - **Native AppleScript** integration for reliable data access
 - **Universal Binary** supporting both Apple Silicon and Intel Macs
 - **Zero dependencies** at runtime - just the binary
@@ -53,7 +53,7 @@ swift build -c release
 
 ## Available Tools
 
-### List Access (Read-Only)
+### List Access (7 tools)
 
 | Tool | Description |
 |------|-------------|
@@ -65,7 +65,7 @@ swift build -c release
 | `get_logbook` | Get completed to-dos from the Logbook |
 | `get_projects` | Get all projects with details |
 
-### Task Operations
+### Task Operations (5 tools)
 
 | Tool | Description |
 |------|-------------|
@@ -75,13 +75,51 @@ swift build -c release
 | `delete_todo` | Delete a to-do (moves to Trash) |
 | `search_todos` | Search for to-dos by name or notes |
 
-### Project Operations
+### Project Operations (3 tools)
 
 | Tool | Description |
 |------|-------------|
 | `add_project` | Create a new project |
 | `update_project` | Update an existing project |
 | `delete_project` | Delete a project (moves to Trash) |
+
+### Areas & Tags (2 tools)
+
+| Tool | Description |
+|------|-------------|
+| `get_areas` | Get all areas |
+| `get_tags` | Get all tags |
+
+### Move Operations (2 tools)
+
+| Tool | Description |
+|------|-------------|
+| `move_todo` | Move a to-do to a different list or project |
+| `move_project` | Move a project to a different area |
+
+### UI Operations (4 tools)
+
+| Tool | Description |
+|------|-------------|
+| `show_todo` | Show a to-do in the Things 3 app |
+| `show_project` | Show a project in the Things 3 app |
+| `show_list` | Show a list in the Things 3 app |
+| `show_quick_entry` | Open the Quick Entry panel |
+
+### Utility Operations (2 tools)
+
+| Tool | Description |
+|------|-------------|
+| `empty_trash` | Permanently delete all items in Trash |
+| `get_selected_todos` | Get currently selected to-dos |
+
+### Advanced Queries (3 tools)
+
+| Tool | Description |
+|------|-------------|
+| `get_todos_in_project` | Get all to-dos in a specific project |
+| `get_todos_in_area` | Get all to-dos in a specific area |
+| `get_projects_in_area` | Get all projects in a specific area |
 
 ## Usage Examples
 
@@ -109,6 +147,19 @@ swift build -c release
 "Mark the 'Submit expense report' task as done"
 ```
 
+### Move Tasks
+
+```
+"Move task 'Buy groceries' to the Someday list"
+```
+
+### View Areas and Tags
+
+```
+"Show me all my areas"
+"List all tags I have"
+```
+
 ## Scheduling Options
 
 When creating or updating tasks, you can use these scheduling options:
@@ -130,7 +181,7 @@ To create a distributable MCPB package:
 
 This creates:
 - Universal Binary (arm64 + x86_64)
-- MCPB package in `mcpb/mcpb.mcpb`
+- MCPB package in `mcpb/che-things-mcp.mcpb`
 
 ## Permissions
 
@@ -145,7 +196,7 @@ che-things-mcp/
 ├── Package.swift           # Swift Package definition
 ├── Sources/CheThingsMCP/
 │   ├── main.swift          # Entry point
-│   ├── Server.swift        # MCP Server with 15 tools
+│   ├── Server.swift        # MCP Server with 28 tools
 │   └── Things/
 │       └── ThingsManager.swift  # AppleScript wrapper
 ├── mcpb/
@@ -165,6 +216,13 @@ This extension:
 - Does not transmit any data externally
 - Only accesses Things 3 data through AppleScript
 - See [PRIVACY.md](mcpb/PRIVACY.md) for full details
+
+## Version History
+
+| Version | Changes |
+|---------|---------|
+| v0.2.0 | Added 13 new tools: areas, tags, move operations, UI controls, utility operations, advanced queries |
+| v0.1.0 | Initial release with 15 tools |
 
 ## Related Projects
 
