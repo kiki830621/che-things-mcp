@@ -29,6 +29,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - `get_tags` now returns parent tag information for hierarchical tags
 
+## [1.3.1] - 2026-01-15
+
+### Fixed
+- **activation date handling**: Fixed read-only property issue by using `schedule` command instead of direct property assignment
+- **add_todo + list parameter**: Fixed by creating todo first, then moving to target list
+- **add_todo + project parameter**: Fixed by creating todo first, then setting project property
+- **date formatting**: Improved AppleScript date compatibility for various locales
+
+### Added
+- Comprehensive `docs/applescript-reference.md` documenting Things 3 AppleScript API
+
+### Technical Details
+- Discovered via AppleScript Dictionary (`sdef /Applications/Things3.app`) that:
+  - `activation date` is read-only (`access="r"`)
+  - Things 3's `make` command does NOT support `in list id` or `in project` syntax
+  - Must use `schedule <todo> for <date>` for scheduling
+  - Must create todo first, then move/set project
+
 ## [1.2.2] - 2026-01-15
 
 ### Changed
@@ -118,6 +136,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 | Version | Total Tools | New Tools |
 |---------|-------------|-----------|
 | 1.4.0   | 47          | +11 (area, tag, cancel, edit, log) |
+| 1.3.1   | 37          | AppleScript integration fixes |
 | 1.2.2   | 37          | Documentation update |
 | 1.2.1   | 37          | Tests and documentation |
 | 1.2.0   | 37          | Performance optimization |

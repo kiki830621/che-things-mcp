@@ -345,6 +345,7 @@ This extension:
 | Version | Changes |
 |---------|---------|
 | v1.4.0 | **11 new tools (37→47).** Full Area CRUD (`add_area`, `update_area`, `delete_area`), Tag CRUD with hierarchy (`add_tag`, `update_tag`, `delete_tag`), Cancel operations (`cancel_todo`, `cancel_project`), Edit operations (`edit_todo`, `edit_project`), and `log_completed_now`. |
+| v1.3.1 | **AppleScript integration fixes.** Fixed `activation date` read-only issue, `add_todo` with list/project parameters. Added `docs/applescript-reference.md`. |
 | v1.2.2 | **CLI syntax update.** Updated `claude mcp add` commands with correct `--scope user --transport stdio` syntax. |
 | v1.2.1 | **Documentation & tests.** Updated installation guide to recommend `~/bin/` over cloud-synced folders. Added MCP protocol tests and integration tests. |
 | v1.2.0 | **Performance optimization & MCP fix.** Batch property fetching (29x faster). Fixed MCP event loop blocking - AppleScript now runs on background thread via DispatchQueue. |
