@@ -50,16 +50,12 @@ mkdir -p ~/bin
 curl -L https://github.com/kiki830621/che-things-mcp/releases/latest/download/CheThingsMCP -o ~/bin/CheThingsMCP
 chmod +x ~/bin/CheThingsMCP
 
-# Add to Claude Code (user scope = available in all projects)
+# Add to Claude Code
+# --scope user    : available across all projects (stored in ~/.claude.json)
+# --transport stdio: local binary execution via stdin/stdout
+# --              : separator between claude options and the command
 claude mcp add --scope user --transport stdio che-things-mcp -- ~/bin/CheThingsMCP
 ```
-
-**CLI Options Explained:**
-| Option | Description |
-|--------|-------------|
-| `--scope user` | Available across all projects (stored in `~/.claude.json`) |
-| `--transport stdio` | Local binary execution via stdin/stdout |
-| `--` | Separator between claude options and the command |
 
 ### Build from Source
 
