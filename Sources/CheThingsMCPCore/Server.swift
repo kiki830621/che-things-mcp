@@ -34,7 +34,9 @@ public class CheThingsMCPServer {
 
     // MARK: - Tool Definitions
 
-    private static func defineTools() -> [Tool] {
+    /// Define all available tools
+    /// Note: `internal` visibility for testing
+    static func defineTools() -> [Tool] {
         [
             // === List Access Tools (7) ===
             Tool(
