@@ -292,6 +292,7 @@ This extension:
 
 | Version | Changes |
 |---------|---------|
+| v1.1.1 | Simplified AppleScript syntax: use `list id` instead of `first list whose source type is`. |
 | v1.1.0 | **Complete i18n support.** Fixed all localization issues for built-in lists (Inbox, Today, Upcoming, etc.) using Things3 internal source types. |
 | v1.0.0 | **First stable release.** 37 tools with full i18n support. Fixed localization bug for non-English systems. |
 | v0.4.1 | Fixed delete operations failing on localized Things3 (Chinese, Japanese, etc.) |

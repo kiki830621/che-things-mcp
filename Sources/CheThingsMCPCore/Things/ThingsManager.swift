@@ -150,7 +150,7 @@ public actor ThingsManager {
     /// Get AppleScript list reference string (locale-independent for built-in lists)
     private func getListReference(_ listName: String) -> String {
         if let sourceType = getSourceTypeForList(listName) {
-            return "(first list whose source type is \(sourceType))"
+            return "list id \"\(sourceType)\""
         }
         return "list \"\(listName)\""
     }
