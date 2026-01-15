@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-01-16
+
+### Added
+- **11 new tools** for complete Things 3 API coverage (37 → 47 tools)
+- Area CRUD operations:
+  - `add_area` - Create a new area
+  - `update_area` - Update an existing area
+  - `delete_area` - Delete an area
+- Tag CRUD operations with hierarchical support:
+  - `add_tag` - Create a new tag (supports parent tag for hierarchy)
+  - `update_tag` - Update tag name or parent
+  - `delete_tag` - Delete a tag
+- Cancel operations:
+  - `cancel_todo` - Cancel a to-do (shows as struck-through)
+  - `cancel_project` - Cancel a project (shows as struck-through)
+- Edit operations:
+  - `edit_todo` - Open to-do in Things 3 edit view
+  - `edit_project` - Open project in Things 3 edit view
+- Utility:
+  - `log_completed_now` - Move completed items to Logbook immediately
+
+### Changed
+- `get_tags` now returns parent tag information for hierarchical tags
+
 ## [1.2.2] - 2026-01-15
 
 ### Changed
@@ -93,6 +117,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Total Tools | New Tools |
 |---------|-------------|-----------|
+| 1.4.0   | 47          | +11 (area, tag, cancel, edit, log) |
 | 1.2.2   | 37          | Documentation update |
 | 1.2.1   | 37          | Tests and documentation |
 | 1.2.0   | 37          | Performance optimization |

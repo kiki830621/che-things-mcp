@@ -11,7 +11,7 @@
 
 ## Features
 
-- **37 tools** for comprehensive Things 3 management
+- **47 tools** for comprehensive Things 3 management
 - **Native AppleScript** integration for reliable data access
 - **Universal Binary** supporting both Apple Silicon and Intel Macs
 - **Zero dependencies** at runtime - just the binary
@@ -113,7 +113,7 @@ You can also set the token at runtime using the `set_auth_token` tool.
 
 ---
 
-## All 37 Tools
+## All 47 Tools
 
 <details>
 <summary><b>List Access (7)</b></summary>
@@ -155,12 +155,28 @@ You can also set the token at runtime using the `set_auth_token` tool.
 </details>
 
 <details>
-<summary><b>Areas & Tags (2)</b></summary>
+<summary><b>Area Operations (4)</b></summary>
 
 | Tool | Description |
 |------|-------------|
 | `get_areas` | Get all areas |
-| `get_tags` | Get all tags |
+| `add_area` | Create a new area |
+| `update_area` | Update an existing area |
+| `delete_area` | Delete an area |
+
+</details>
+
+<details>
+<summary><b>Tag Operations (4)</b></summary>
+
+| Tool | Description |
+|------|-------------|
+| `get_tags` | Get all tags (includes parent tag info) |
+| `add_tag` | Create a new tag with optional parent |
+| `update_tag` | Update tag name or parent |
+| `delete_tag` | Delete a tag |
+
+> 💡 **Hierarchical Tags**: Tags can be nested using the `parent_tag` parameter. For example, create a "Work" tag, then create "Meetings" with `parent_tag: "Work"` to get "Work → Meetings".
 
 </details>
 
@@ -187,12 +203,35 @@ You can also set the token at runtime using the `set_auth_token` tool.
 </details>
 
 <details>
-<summary><b>Utility Operations (2)</b></summary>
+<summary><b>Cancel Operations (2)</b></summary>
+
+| Tool | Description |
+|------|-------------|
+| `cancel_todo` | Cancel a to-do (shows as struck-through) |
+| `cancel_project` | Cancel a project (shows as struck-through) |
+
+> 💡 **Cancel vs Delete**: Canceled items remain visible but struck-through. Use this for items you decided not to do but want to keep a record of.
+
+</details>
+
+<details>
+<summary><b>Edit Operations (2)</b></summary>
+
+| Tool | Description |
+|------|-------------|
+| `edit_todo` | Open to-do in Things 3 edit view |
+| `edit_project` | Open project in Things 3 edit view |
+
+</details>
+
+<details>
+<summary><b>Utility Operations (3)</b></summary>
 
 | Tool | Description |
 |------|-------------|
 | `empty_trash` | Permanently delete all items in Trash |
 | `get_selected_todos` | Get currently selected to-dos |
+| `log_completed_now` | Move completed items to Logbook immediately |
 
 </details>
 
@@ -305,6 +344,7 @@ This extension:
 
 | Version | Changes |
 |---------|---------|
+| v1.4.0 | **11 new tools (37→47).** Full Area CRUD (`add_area`, `update_area`, `delete_area`), Tag CRUD with hierarchy (`add_tag`, `update_tag`, `delete_tag`), Cancel operations (`cancel_todo`, `cancel_project`), Edit operations (`edit_todo`, `edit_project`), and `log_completed_now`. |
 | v1.2.2 | **CLI syntax update.** Updated `claude mcp add` commands with correct `--scope user --transport stdio` syntax. |
 | v1.2.1 | **Documentation & tests.** Updated installation guide to recommend `~/bin/` over cloud-synced folders. Added MCP protocol tests and integration tests. |
 | v1.2.0 | **Performance optimization & MCP fix.** Batch property fetching (29x faster). Fixed MCP event loop blocking - AppleScript now runs on background thread via DispatchQueue. |
