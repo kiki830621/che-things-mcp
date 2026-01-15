@@ -50,8 +50,8 @@ mkdir -p ~/bin
 curl -L https://github.com/kiki830621/che-things-mcp/releases/latest/download/CheThingsMCP -o ~/bin/CheThingsMCP
 chmod +x ~/bin/CheThingsMCP
 
-# Add to Claude Code
-claude mcp add che-things-mcp ~/bin/CheThingsMCP
+# Add to Claude Code (user scope = available in all projects)
+claude mcp add --scope user --transport stdio che-things-mcp -- ~/bin/CheThingsMCP
 ```
 
 ### Build from Source
@@ -101,7 +101,9 @@ Some operations (like checklist management) require a Things3 auth token.
 **Claude Code**:
 
 ```bash
-claude mcp add che-things-mcp ~/bin/CheThingsMCP -e THINGS3_AUTH_TOKEN=your-token
+claude mcp add --scope user --transport stdio che-things-mcp \
+  --env THINGS3_AUTH_TOKEN=your-token \
+  -- ~/bin/CheThingsMCP
 ```
 
 You can also set the token at runtime using the `set_auth_token` tool.
