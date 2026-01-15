@@ -11,7 +11,7 @@
 
 ## Features
 
-- **28 tools** for comprehensive Things 3 management
+- **35 tools** for comprehensive Things 3 management
 - **Native AppleScript** integration for reliable data access
 - **Universal Binary** supporting both Apple Silicon and Intel Macs
 - **Zero dependencies** at runtime - just the binary
@@ -63,7 +63,7 @@ On first use, macOS will prompt for **Automation** permission to control Things 
 
 ---
 
-## All 28 Tools
+## All 35 Tools
 
 <details>
 <summary><b>List Access (7)</b></summary>
@@ -157,6 +157,45 @@ On first use, macOS will prompt for **Automation** permission to control Things 
 
 </details>
 
+<details>
+<summary><b>Batch Operations (5)</b></summary>
+
+| Tool | Description |
+|------|-------------|
+| `create_todos_batch` | Create multiple to-dos in a single operation |
+| `complete_todos_batch` | Mark multiple to-dos as completed |
+| `delete_todos_batch` | Delete multiple to-dos |
+| `move_todos_batch` | Move multiple to-dos to a different list/project |
+| `update_todos_batch` | Update multiple to-dos |
+
+Batch operations return detailed results:
+```json
+{
+  "total": 3,
+  "succeeded": 2,
+  "failed": 1,
+  "results": [
+    {"index": 0, "success": true, "id": "ABC123"},
+    {"index": 1, "success": true, "id": "DEF456"},
+    {"index": 2, "success": false, "error": "To-do not found with ID: XYZ"}
+  ]
+}
+```
+
+</details>
+
+<details>
+<summary><b>Checklist Operations (2)</b></summary>
+
+| Tool | Description |
+|------|-------------|
+| `add_checklist_items` | Add checklist items to an existing to-do |
+| `set_checklist_items` | Replace all checklist items in a to-do |
+
+> ⚠️ **API Limitation**: Due to Things 3's AppleScript limitations, checklist operations can only **add** or **replace** items. Reading existing checklist items or marking individual items as complete is not supported.
+
+</details>
+
 ---
 
 ## Usage Examples
@@ -206,6 +245,7 @@ This extension:
 
 | Version | Changes |
 |---------|---------|
+| v0.3.0 | Added 7 new tools: batch operations (5) and checklist support (2). Improved error messages with specific IDs. Added unit tests. |
 | v0.2.0 | Added 13 new tools: areas, tags, move operations, UI controls, utility operations, advanced queries |
 | v0.1.0 | Initial release with 15 tools |
 

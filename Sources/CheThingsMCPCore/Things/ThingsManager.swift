@@ -1,66 +1,118 @@
 import Foundation
+import AppKit
 
 // MARK: - Data Models
 
-struct Todo: Codable {
-    let id: String
-    let name: String
-    let notes: String?
-    let status: String  // "open", "completed", "canceled"
-    let tagNames: [String]
-    let dueDate: String?
-    let scheduledDate: String?
-    let completionDate: String?
-    let projectName: String?
-    let areaName: String?
+public struct Todo: Codable {
+    public let id: String
+    public let name: String
+    public let notes: String?
+    public let status: String  // "open", "completed", "canceled"
+    public let tagNames: [String]
+    public let dueDate: String?
+    public let scheduledDate: String?
+    public let completionDate: String?
+    public let projectName: String?
+    public let areaName: String?
+
+    public init(id: String, name: String, notes: String?, status: String, tagNames: [String], dueDate: String?, scheduledDate: String?, completionDate: String?, projectName: String?, areaName: String?) {
+        self.id = id
+        self.name = name
+        self.notes = notes
+        self.status = status
+        self.tagNames = tagNames
+        self.dueDate = dueDate
+        self.scheduledDate = scheduledDate
+        self.completionDate = completionDate
+        self.projectName = projectName
+        self.areaName = areaName
+    }
 }
 
-struct Project: Codable {
-    let id: String
-    let name: String
-    let notes: String?
-    let status: String
-    let tagNames: [String]
-    let areaName: String?
-    let todoCount: Int
+public struct Project: Codable {
+    public let id: String
+    public let name: String
+    public let notes: String?
+    public let status: String
+    public let tagNames: [String]
+    public let areaName: String?
+    public let todoCount: Int
+
+    public init(id: String, name: String, notes: String?, status: String, tagNames: [String], areaName: String?, todoCount: Int) {
+        self.id = id
+        self.name = name
+        self.notes = notes
+        self.status = status
+        self.tagNames = tagNames
+        self.areaName = areaName
+        self.todoCount = todoCount
+    }
 }
 
-struct Area: Codable {
-    let id: String
-    let name: String
-    let tagNames: [String]
+public struct Area: Codable {
+    public let id: String
+    public let name: String
+    public let tagNames: [String]
+
+    public init(id: String, name: String, tagNames: [String]) {
+        self.id = id
+        self.name = name
+        self.tagNames = tagNames
+    }
 }
 
-struct Tag: Codable {
-    let id: String
-    let name: String
+public struct Tag: Codable {
+    public let id: String
+    public let name: String
+
+    public init(id: String, name: String) {
+        self.id = id
+        self.name = name
+    }
 }
 
 // MARK: - Errors
 
-enum ThingsError: Error, LocalizedError {
+public enum ThingsError: Error, LocalizedError {
     case scriptError(String)
     case notFound(String)
+    case todoNotFound(id: String)
+    case projectNotFound(id: String)
+    case areaNotFound(id: String)
+    case tagNotFound(name: String)
     case invalidParameter(String)
     case thingsNotInstalled
+    case urlSchemeError(String)
 
-    var errorDescription: String? {
+    public var errorDescription: String? {
         switch self {
         case .scriptError(let message):
             return "AppleScript error: \(message)"
         case .notFound(let item):
             return "Not found: \(item)"
+        case .todoNotFound(let id):
+            return "To-do not found with ID: \(id)"
+        case .projectNotFound(let id):
+            return "Project not found with ID: \(id)"
+        case .areaNotFound(let id):
+            return "Area not found with ID: \(id)"
+        case .tagNotFound(let name):
+            return "Tag not found: \(name)"
         case .invalidParameter(let message):
             return "Invalid parameter: \(message)"
         case .thingsNotInstalled:
             return "Things 3 is not installed. Please install it from the Mac App Store."
+        case .urlSchemeError(let message):
+            return "URL Scheme error: \(message)"
         }
     }
 }
 
 // MARK: - ThingsManager Actor
 
-actor ThingsManager {
+public actor ThingsManager {
+
+    public init() {}
 
     private let dateFormatter: ISO8601DateFormatter = {
         let formatter = ISO8601DateFormatter()
@@ -115,7 +167,7 @@ actor ThingsManager {
 
     // MARK: - List Access (Read Operations)
 
-    func getTodos(from listName: String) async throws -> [Todo] {
+    public func getTodos(from listName: String) async throws -> [Todo] {
         let script = """
         tell application "Things3"
             set output to ""
@@ -164,33 +216,33 @@ actor ThingsManager {
         return parseTodosFromOutput(result)
     }
 
-    func getInbox() async throws -> [Todo] {
+    public func getInbox() async throws -> [Todo] {
         return try await getTodos(from: "Inbox")
     }
 
-    func getToday() async throws -> [Todo] {
+    public func getToday() async throws -> [Todo] {
         return try await getTodos(from: "Today")
     }
 
-    func getUpcoming() async throws -> [Todo] {
+    public func getUpcoming() async throws -> [Todo] {
         return try await getTodos(from: "Upcoming")
     }
 
-    func getAnytime() async throws -> [Todo] {
+    public func getAnytime() async throws -> [Todo] {
         return try await getTodos(from: "Anytime")
     }
 
-    func getSomeday() async throws -> [Todo] {
+    public func getSomeday() async throws -> [Todo] {
         return try await getTodos(from: "Someday")
     }
 
-    func getLogbook() async throws -> [Todo] {
+    public func getLogbook() async throws -> [Todo] {
         return try await getTodos(from: "Logbook")
     }
 
     // MARK: - Projects
 
-    func getProjects() async throws -> [Project] {
+    public func getProjects() async throws -> [Project] {
         let script = """
         tell application "Things3"
             set output to ""
@@ -220,7 +272,7 @@ actor ThingsManager {
 
     // MARK: - Search
 
-    func searchTodos(query: String) async throws -> [Todo] {
+    public func searchTodos(query: String) async throws -> [Todo] {
         let script = """
         tell application "Things3"
             set output to ""
@@ -269,7 +321,7 @@ actor ThingsManager {
 
     // MARK: - Create Operations
 
-    func addTodo(
+    public func addTodo(
         name: String,
         notes: String? = nil,
         dueDate: String? = nil,
@@ -322,7 +374,7 @@ actor ThingsManager {
         )
     }
 
-    func addProject(
+    public func addProject(
         name: String,
         notes: String? = nil,
         tags: [String]? = nil,
@@ -367,7 +419,7 @@ actor ThingsManager {
 
     // MARK: - Update Operations
 
-    func updateTodo(
+    public func updateTodo(
         id: String,
         name: String? = nil,
         notes: String? = nil,
@@ -407,7 +459,7 @@ actor ThingsManager {
         _ = try executeAppleScript(script)
     }
 
-    func updateProject(
+    public func updateProject(
         id: String,
         name: String? = nil,
         notes: String? = nil,
@@ -441,7 +493,7 @@ actor ThingsManager {
 
     // MARK: - Complete/Delete Operations
 
-    func completeTodo(id: String, completed: Bool = true) async throws {
+    public func completeTodo(id: String, completed: Bool = true) async throws {
         let status = completed ? "completed" : "open"
         let script = """
         tell application "Things3"
@@ -451,7 +503,7 @@ actor ThingsManager {
         _ = try executeAppleScript(script)
     }
 
-    func deleteTodo(id: String) async throws {
+    public func deleteTodo(id: String) async throws {
         let script = """
         tell application "Things3"
             move to do id "\(id)" to list "Trash"
@@ -460,7 +512,7 @@ actor ThingsManager {
         _ = try executeAppleScript(script)
     }
 
-    func deleteProject(id: String) async throws {
+    public func deleteProject(id: String) async throws {
         let script = """
         tell application "Things3"
             move project id "\(id)" to list "Trash"
@@ -471,7 +523,7 @@ actor ThingsManager {
 
     // MARK: - Areas
 
-    func getAreas() async throws -> [Area] {
+    public func getAreas() async throws -> [Area] {
         let script = """
         tell application "Things3"
             set output to ""
@@ -491,7 +543,7 @@ actor ThingsManager {
 
     // MARK: - Tags
 
-    func getTags() async throws -> [Tag] {
+    public func getTags() async throws -> [Tag] {
         let script = """
         tell application "Things3"
             set output to ""
@@ -510,7 +562,7 @@ actor ThingsManager {
 
     // MARK: - Move Operations
 
-    func moveTodo(id: String, toList: String? = nil, toProject: String? = nil) async throws {
+    public func moveTodo(id: String, toList: String? = nil, toProject: String? = nil) async throws {
         var moveCommand = ""
 
         if let projectName = toProject {
@@ -529,7 +581,7 @@ actor ThingsManager {
         _ = try executeAppleScript(script)
     }
 
-    func moveProject(id: String, toArea: String) async throws {
+    public func moveProject(id: String, toArea: String) async throws {
         let script = """
         tell application "Things3"
             move project id "\(id)" to area "\(escapeForAppleScript(toArea))"
@@ -540,7 +592,7 @@ actor ThingsManager {
 
     // MARK: - UI Operations
 
-    func showTodo(id: String) async throws {
+    public func showTodo(id: String) async throws {
         let script = """
         tell application "Things3"
             show to do id "\(id)"
@@ -549,7 +601,7 @@ actor ThingsManager {
         _ = try executeAppleScript(script)
     }
 
-    func showProject(id: String) async throws {
+    public func showProject(id: String) async throws {
         let script = """
         tell application "Things3"
             show project id "\(id)"
@@ -558,7 +610,7 @@ actor ThingsManager {
         _ = try executeAppleScript(script)
     }
 
-    func showList(name: String) async throws {
+    public func showList(name: String) async throws {
         let script = """
         tell application "Things3"
             show list "\(name)"
@@ -567,7 +619,7 @@ actor ThingsManager {
         _ = try executeAppleScript(script)
     }
 
-    func showQuickEntry(
+    public func showQuickEntry(
         name: String? = nil,
         notes: String? = nil,
         when: String? = nil,
@@ -597,7 +649,7 @@ actor ThingsManager {
 
     // MARK: - Utility Operations
 
-    func emptyTrash() async throws {
+    public func emptyTrash() async throws {
         let script = """
         tell application "Things3"
             empty trash
@@ -606,7 +658,7 @@ actor ThingsManager {
         _ = try executeAppleScript(script)
     }
 
-    func getSelectedTodos() async throws -> [Todo] {
+    public func getSelectedTodos() async throws -> [Todo] {
         let script = """
         tell application "Things3"
             set output to ""
@@ -655,7 +707,7 @@ actor ThingsManager {
 
     // MARK: - Advanced Queries
 
-    func getTodosInProject(projectId: String? = nil, projectName: String? = nil) async throws -> [Todo] {
+    public func getTodosInProject(projectId: String? = nil, projectName: String? = nil) async throws -> [Todo] {
         var projectRef = ""
         if let id = projectId {
             projectRef = "project id \"\(id)\""
@@ -711,7 +763,7 @@ actor ThingsManager {
         return parseTodosFromOutput(result)
     }
 
-    func getTodosInArea(areaId: String? = nil, areaName: String? = nil) async throws -> [Todo] {
+    public func getTodosInArea(areaId: String? = nil, areaName: String? = nil) async throws -> [Todo] {
         var areaRef = ""
         if let id = areaId {
             areaRef = "area id \"\(id)\""
@@ -767,7 +819,7 @@ actor ThingsManager {
         return parseTodosFromOutput(result)
     }
 
-    func getProjectsInArea(areaId: String? = nil, areaName: String? = nil) async throws -> [Project] {
+    public func getProjectsInArea(areaId: String? = nil, areaName: String? = nil) async throws -> [Project] {
         var areaRef = ""
         if let id = areaId {
             areaRef = "area id \"\(id)\""
@@ -902,5 +954,195 @@ actor ThingsManager {
                 name: parts[1]
             )
         }
+    }
+
+    // MARK: - Batch Operations
+
+    public struct BatchResult: Codable {
+        public let total: Int
+        public let succeeded: Int
+        public let failed: Int
+        public let results: [BatchItemResult]
+
+        public init(total: Int, succeeded: Int, failed: Int, results: [BatchItemResult]) {
+            self.total = total
+            self.succeeded = succeeded
+            self.failed = failed
+            self.results = results
+        }
+    }
+
+    public struct BatchItemResult: Codable {
+        public let index: Int
+        public let success: Bool
+        public let id: String?
+        public let error: String?
+
+        public init(index: Int, success: Bool, id: String?, error: String?) {
+            self.index = index
+            self.success = success
+            self.id = id
+            self.error = error
+        }
+    }
+
+    public func createTodosBatch(
+        items: [[String: Any]]
+    ) async -> BatchResult {
+        var results: [BatchItemResult] = []
+        var succeeded = 0
+        var failed = 0
+
+        for (index, item) in items.enumerated() {
+            do {
+                let name = item["name"] as? String ?? ""
+                guard !name.isEmpty else {
+                    throw ThingsError.invalidParameter("name is required at index \(index)")
+                }
+
+                let todo = try await addTodo(
+                    name: name,
+                    notes: item["notes"] as? String,
+                    dueDate: item["due_date"] as? String,
+                    tags: item["tags"] as? [String],
+                    listName: item["list"] as? String,
+                    projectName: item["project"] as? String,
+                    when: item["when"] as? String
+                )
+                results.append(BatchItemResult(index: index, success: true, id: todo.id, error: nil))
+                succeeded += 1
+            } catch {
+                results.append(BatchItemResult(index: index, success: false, id: nil, error: error.localizedDescription))
+                failed += 1
+            }
+        }
+
+        return BatchResult(total: items.count, succeeded: succeeded, failed: failed, results: results)
+    }
+
+    public func completeTodosBatch(ids: [String], completed: Bool = true) async -> BatchResult {
+        var results: [BatchItemResult] = []
+        var succeeded = 0
+        var failed = 0
+
+        for (index, id) in ids.enumerated() {
+            do {
+                try await completeTodo(id: id, completed: completed)
+                results.append(BatchItemResult(index: index, success: true, id: id, error: nil))
+                succeeded += 1
+            } catch {
+                results.append(BatchItemResult(index: index, success: false, id: id, error: error.localizedDescription))
+                failed += 1
+            }
+        }
+
+        return BatchResult(total: ids.count, succeeded: succeeded, failed: failed, results: results)
+    }
+
+    public func deleteTodosBatch(ids: [String]) async -> BatchResult {
+        var results: [BatchItemResult] = []
+        var succeeded = 0
+        var failed = 0
+
+        for (index, id) in ids.enumerated() {
+            do {
+                try await deleteTodo(id: id)
+                results.append(BatchItemResult(index: index, success: true, id: id, error: nil))
+                succeeded += 1
+            } catch {
+                results.append(BatchItemResult(index: index, success: false, id: id, error: error.localizedDescription))
+                failed += 1
+            }
+        }
+
+        return BatchResult(total: ids.count, succeeded: succeeded, failed: failed, results: results)
+    }
+
+    public func moveTodosBatch(ids: [String], toList: String? = nil, toProject: String? = nil) async -> BatchResult {
+        var results: [BatchItemResult] = []
+        var succeeded = 0
+        var failed = 0
+
+        for (index, id) in ids.enumerated() {
+            do {
+                try await moveTodo(id: id, toList: toList, toProject: toProject)
+                results.append(BatchItemResult(index: index, success: true, id: id, error: nil))
+                succeeded += 1
+            } catch {
+                results.append(BatchItemResult(index: index, success: false, id: id, error: error.localizedDescription))
+                failed += 1
+            }
+        }
+
+        return BatchResult(total: ids.count, succeeded: succeeded, failed: failed, results: results)
+    }
+
+    public func updateTodosBatch(updates: [[String: Any]]) async -> BatchResult {
+        var results: [BatchItemResult] = []
+        var succeeded = 0
+        var failed = 0
+
+        for (index, update) in updates.enumerated() {
+            do {
+                guard let id = update["id"] as? String else {
+                    throw ThingsError.invalidParameter("id is required at index \(index)")
+                }
+
+                try await updateTodo(
+                    id: id,
+                    name: update["name"] as? String,
+                    notes: update["notes"] as? String,
+                    dueDate: update["due_date"] as? String,
+                    tags: update["tags"] as? [String],
+                    when: update["when"] as? String
+                )
+                results.append(BatchItemResult(index: index, success: true, id: id, error: nil))
+                succeeded += 1
+            } catch {
+                let id = update["id"] as? String
+                results.append(BatchItemResult(index: index, success: false, id: id, error: error.localizedDescription))
+                failed += 1
+            }
+        }
+
+        return BatchResult(total: updates.count, succeeded: succeeded, failed: failed, results: results)
+    }
+
+    // MARK: - Checklist Operations (via URL Scheme)
+
+    /// Add checklist items to an existing to-do (appends to existing checklist)
+    /// - Note: Due to Things 3 API limitations, this can only ADD items. It cannot read or mark items as complete.
+    public func addChecklistItems(todoId: String, items: [String]) throws {
+        guard !items.isEmpty else {
+            throw ThingsError.invalidParameter("items array cannot be empty")
+        }
+
+        let itemsString = items.joined(separator: "\n")
+        guard let encodedItems = itemsString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
+            throw ThingsError.urlSchemeError("Failed to encode checklist items")
+        }
+
+        let urlString = "things:///update?id=\(todoId)&append-checklist-items=\(encodedItems)"
+        guard let url = URL(string: urlString) else {
+            throw ThingsError.urlSchemeError("Failed to create URL")
+        }
+
+        NSWorkspace.shared.open(url)
+    }
+
+    /// Set (replace) all checklist items for a to-do
+    /// - Warning: This will REPLACE all existing checklist items!
+    public func setChecklistItems(todoId: String, items: [String]) throws {
+        let itemsString = items.joined(separator: "\n")
+        guard let encodedItems = itemsString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
+            throw ThingsError.urlSchemeError("Failed to encode checklist items")
+        }
+
+        let urlString = "things:///update?id=\(todoId)&checklist-items=\(encodedItems)"
+        guard let url = URL(string: urlString) else {
+            throw ThingsError.urlSchemeError("Failed to create URL")
+        }
+
+        NSWorkspace.shared.open(url)
     }
 }

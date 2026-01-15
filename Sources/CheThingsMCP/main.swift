@@ -1,5 +1,4 @@
-import Foundation
-import MCP
+import CheThingsMCPCore
 
 // Entry point
 let server = try await CheThingsMCPServer()

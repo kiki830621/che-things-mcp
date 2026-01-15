@@ -2,7 +2,7 @@ import Foundation
 import MCP
 
 /// MCP Server for Things 3 integration
-class CheThingsMCPServer {
+public class CheThingsMCPServer {
     private let server: Server
     private let transport: StdioTransport
     private let thingsManager = ThingsManager()
@@ -10,14 +10,14 @@ class CheThingsMCPServer {
     /// All available tools
     private let tools: [Tool]
 
-    init() async throws {
+    public init() async throws {
         // Define all tools
         tools = Self.defineTools()
 
         // Create server with tools capability
         server = Server(
             name: "che-things-mcp",
-            version: "0.2.0",
+            version: "0.3.0",
             capabilities: .init(tools: .init())
         )
 
@@ -27,7 +27,7 @@ class CheThingsMCPServer {
         await registerHandlers()
     }
 
-    func run() async throws {
+    public func run() async throws {
         try await server.start(transport: transport)
         await server.waitUntilCompleted()
     }
@@ -508,6 +508,165 @@ class CheThingsMCPServer {
                     ])
                 ]),
                 annotations: .init(readOnlyHint: true, openWorldHint: false)
+            ),
+
+            // === Batch Operations (5) ===
+            Tool(
+                name: "create_todos_batch",
+                description: "Create multiple to-dos in a single operation. Returns detailed results for each item including successes and failures.",
+                inputSchema: .object([
+                    "type": .string("object"),
+                    "properties": .object([
+                        "items": .object([
+                            "type": .string("array"),
+                            "description": .string("Array of to-do objects to create. Each object can have: name (required), notes, due_date, tags, list, project, when"),
+                            "items": .object([
+                                "type": .string("object"),
+                                "properties": .object([
+                                    "name": .object(["type": .string("string")]),
+                                    "notes": .object(["type": .string("string")]),
+                                    "due_date": .object(["type": .string("string")]),
+                                    "tags": .object(["type": .string("array"), "items": .object(["type": .string("string")])]),
+                                    "list": .object(["type": .string("string")]),
+                                    "project": .object(["type": .string("string")]),
+                                    "when": .object(["type": .string("string")])
+                                ]),
+                                "required": .array([.string("name")])
+                            ])
+                        ])
+                    ]),
+                    "required": .array([.string("items")])
+                ]),
+                annotations: .init(readOnlyHint: false, destructiveHint: false, openWorldHint: false)
+            ),
+            Tool(
+                name: "complete_todos_batch",
+                description: "Mark multiple to-dos as completed or incomplete in a single operation.",
+                inputSchema: .object([
+                    "type": .string("object"),
+                    "properties": .object([
+                        "ids": .object([
+                            "type": .string("array"),
+                            "description": .string("Array of to-do identifiers to complete/uncomplete"),
+                            "items": .object(["type": .string("string")])
+                        ]),
+                        "completed": .object([
+                            "type": .string("boolean"),
+                            "description": .string("true to mark as completed, false to uncomplete. Defaults to true.")
+                        ])
+                    ]),
+                    "required": .array([.string("ids")])
+                ]),
+                annotations: .init(readOnlyHint: false, destructiveHint: false, openWorldHint: false)
+            ),
+            Tool(
+                name: "delete_todos_batch",
+                description: "Delete multiple to-dos in a single operation (moves to Trash).",
+                inputSchema: .object([
+                    "type": .string("object"),
+                    "properties": .object([
+                        "ids": .object([
+                            "type": .string("array"),
+                            "description": .string("Array of to-do identifiers to delete"),
+                            "items": .object(["type": .string("string")])
+                        ])
+                    ]),
+                    "required": .array([.string("ids")])
+                ]),
+                annotations: .init(readOnlyHint: false, destructiveHint: true, openWorldHint: false)
+            ),
+            Tool(
+                name: "move_todos_batch",
+                description: "Move multiple to-dos to a different list or project in a single operation.",
+                inputSchema: .object([
+                    "type": .string("object"),
+                    "properties": .object([
+                        "ids": .object([
+                            "type": .string("array"),
+                            "description": .string("Array of to-do identifiers to move"),
+                            "items": .object(["type": .string("string")])
+                        ]),
+                        "to_list": .object([
+                            "type": .string("string"),
+                            "description": .string("Target list: 'Inbox', 'Today', 'Anytime', 'Someday', 'Trash'")
+                        ]),
+                        "to_project": .object([
+                            "type": .string("string"),
+                            "description": .string("Target project name")
+                        ])
+                    ]),
+                    "required": .array([.string("ids")])
+                ]),
+                annotations: .init(readOnlyHint: false, destructiveHint: false, openWorldHint: false)
+            ),
+            Tool(
+                name: "update_todos_batch",
+                description: "Update multiple to-dos in a single operation. Each item specifies which fields to update.",
+                inputSchema: .object([
+                    "type": .string("object"),
+                    "properties": .object([
+                        "updates": .object([
+                            "type": .string("array"),
+                            "description": .string("Array of update objects. Each must have 'id' and any fields to update: name, notes, due_date, tags, when"),
+                            "items": .object([
+                                "type": .string("object"),
+                                "properties": .object([
+                                    "id": .object(["type": .string("string")]),
+                                    "name": .object(["type": .string("string")]),
+                                    "notes": .object(["type": .string("string")]),
+                                    "due_date": .object(["type": .string("string")]),
+                                    "tags": .object(["type": .string("array"), "items": .object(["type": .string("string")])]),
+                                    "when": .object(["type": .string("string")])
+                                ]),
+                                "required": .array([.string("id")])
+                            ])
+                        ])
+                    ]),
+                    "required": .array([.string("updates")])
+                ]),
+                annotations: .init(readOnlyHint: false, destructiveHint: false, openWorldHint: false)
+            ),
+
+            // === Checklist Operations (2) ===
+            Tool(
+                name: "add_checklist_items",
+                description: "Add checklist items to an existing to-do. ⚠️ LIMITATION: Due to Things 3 API restrictions, this can only ADD items. It CANNOT read existing checklist items or mark them as complete.",
+                inputSchema: .object([
+                    "type": .string("object"),
+                    "properties": .object([
+                        "id": .object([
+                            "type": .string("string"),
+                            "description": .string("The to-do identifier")
+                        ]),
+                        "items": .object([
+                            "type": .string("array"),
+                            "description": .string("Array of checklist item strings to add"),
+                            "items": .object(["type": .string("string")])
+                        ])
+                    ]),
+                    "required": .array([.string("id"), .string("items")])
+                ]),
+                annotations: .init(readOnlyHint: false, destructiveHint: false, openWorldHint: true)
+            ),
+            Tool(
+                name: "set_checklist_items",
+                description: "Set (replace) all checklist items for a to-do. ⚠️ WARNING: This will REPLACE all existing checklist items! ⚠️ LIMITATION: Cannot read existing items beforehand.",
+                inputSchema: .object([
+                    "type": .string("object"),
+                    "properties": .object([
+                        "id": .object([
+                            "type": .string("string"),
+                            "description": .string("The to-do identifier")
+                        ]),
+                        "items": .object([
+                            "type": .string("array"),
+                            "description": .string("Array of checklist item strings (replaces existing)"),
+                            "items": .object(["type": .string("string")])
+                        ])
+                    ]),
+                    "required": .array([.string("id"), .string("items")])
+                ]),
+                annotations: .init(readOnlyHint: false, destructiveHint: true, openWorldHint: true)
             )
         ]
     }
@@ -604,6 +763,24 @@ class CheThingsMCPServer {
                 result = try await handleGetTodosInArea(params.arguments)
             case "get_projects_in_area":
                 result = try await handleGetProjectsInArea(params.arguments)
+
+            // Batch Operations
+            case "create_todos_batch":
+                result = try await handleCreateTodosBatch(params.arguments)
+            case "complete_todos_batch":
+                result = try await handleCompleteTodosBatch(params.arguments)
+            case "delete_todos_batch":
+                result = try await handleDeleteTodosBatch(params.arguments)
+            case "move_todos_batch":
+                result = try await handleMoveTodosBatch(params.arguments)
+            case "update_todos_batch":
+                result = try await handleUpdateTodosBatch(params.arguments)
+
+            // Checklist Operations
+            case "add_checklist_items":
+                result = try await handleAddChecklistItems(params.arguments)
+            case "set_checklist_items":
+                result = try await handleSetChecklistItems(params.arguments)
 
             default:
                 return CallTool.Result(content: [.text("Unknown tool: \(params.name)")], isError: true)
@@ -1040,6 +1217,152 @@ class CheThingsMCPServer {
         return formatProjectsAsJSON(projects)
     }
 
+    // MARK: - Batch Operation Handlers
+
+    private func handleCreateTodosBatch(_ arguments: [String: Value]?) async throws -> String {
+        guard let args = arguments,
+              case .array(let itemsValue) = args["items"] else {
+            throw ThingsError.invalidParameter("items array is required")
+        }
+
+        // Convert Value array to [[String: Any]]
+        let items: [[String: Any]] = itemsValue.compactMap { value -> [String: Any]? in
+            guard case .object(let obj) = value else { return nil }
+            var dict: [String: Any] = [:]
+            for (key, val) in obj {
+                switch val {
+                case .string(let s): dict[key] = s
+                case .array(let arr):
+                    dict[key] = arr.compactMap { if case .string(let s) = $0 { return s } else { return nil } }
+                case .bool(let b): dict[key] = b
+                case .int(let i): dict[key] = i
+                case .double(let d): dict[key] = d
+                default: break
+                }
+            }
+            return dict
+        }
+
+        let result = await thingsManager.createTodosBatch(items: items)
+        return formatBatchResultAsJSON(result)
+    }
+
+    private func handleCompleteTodosBatch(_ arguments: [String: Value]?) async throws -> String {
+        guard let args = arguments,
+              case .array(let idsValue) = args["ids"] else {
+            throw ThingsError.invalidParameter("ids array is required")
+        }
+
+        let ids = idsValue.compactMap { if case .string(let s) = $0 { return s } else { return nil } }
+
+        var completed = true
+        if case .bool(let c) = args["completed"] { completed = c }
+
+        let result = await thingsManager.completeTodosBatch(ids: ids, completed: completed)
+        return formatBatchResultAsJSON(result)
+    }
+
+    private func handleDeleteTodosBatch(_ arguments: [String: Value]?) async throws -> String {
+        guard let args = arguments,
+              case .array(let idsValue) = args["ids"] else {
+            throw ThingsError.invalidParameter("ids array is required")
+        }
+
+        let ids = idsValue.compactMap { if case .string(let s) = $0 { return s } else { return nil } }
+
+        let result = await thingsManager.deleteTodosBatch(ids: ids)
+        return formatBatchResultAsJSON(result)
+    }
+
+    private func handleMoveTodosBatch(_ arguments: [String: Value]?) async throws -> String {
+        guard let args = arguments,
+              case .array(let idsValue) = args["ids"] else {
+            throw ThingsError.invalidParameter("ids array is required")
+        }
+
+        let ids = idsValue.compactMap { if case .string(let s) = $0 { return s } else { return nil } }
+
+        var toList: String? = nil
+        if case .string(let l) = args["to_list"] { toList = l }
+
+        var toProject: String? = nil
+        if case .string(let p) = args["to_project"] { toProject = p }
+
+        let result = await thingsManager.moveTodosBatch(ids: ids, toList: toList, toProject: toProject)
+        return formatBatchResultAsJSON(result)
+    }
+
+    private func handleUpdateTodosBatch(_ arguments: [String: Value]?) async throws -> String {
+        guard let args = arguments,
+              case .array(let updatesValue) = args["updates"] else {
+            throw ThingsError.invalidParameter("updates array is required")
+        }
+
+        // Convert Value array to [[String: Any]]
+        let updates: [[String: Any]] = updatesValue.compactMap { value -> [String: Any]? in
+            guard case .object(let obj) = value else { return nil }
+            var dict: [String: Any] = [:]
+            for (key, val) in obj {
+                switch val {
+                case .string(let s): dict[key] = s
+                case .array(let arr):
+                    dict[key] = arr.compactMap { if case .string(let s) = $0 { return s } else { return nil } }
+                case .bool(let b): dict[key] = b
+                case .int(let i): dict[key] = i
+                case .double(let d): dict[key] = d
+                default: break
+                }
+            }
+            return dict
+        }
+
+        let result = await thingsManager.updateTodosBatch(updates: updates)
+        return formatBatchResultAsJSON(result)
+    }
+
+    // MARK: - Checklist Operation Handlers
+
+    private func handleAddChecklistItems(_ arguments: [String: Value]?) async throws -> String {
+        guard let args = arguments,
+              case .string(let id) = args["id"],
+              case .array(let itemsValue) = args["items"] else {
+            throw ThingsError.invalidParameter("id and items are required")
+        }
+
+        let items = itemsValue.compactMap { if case .string(let s) = $0 { return s } else { return nil } }
+
+        try await thingsManager.addChecklistItems(todoId: id, items: items)
+
+        return """
+        {
+            "success": true,
+            "message": "Added \(items.count) checklist item(s) to to-do",
+            "note": "Due to API limitations, checklist items cannot be read back. Open Things 3 to verify."
+        }
+        """
+    }
+
+    private func handleSetChecklistItems(_ arguments: [String: Value]?) async throws -> String {
+        guard let args = arguments,
+              case .string(let id) = args["id"],
+              case .array(let itemsValue) = args["items"] else {
+            throw ThingsError.invalidParameter("id and items are required")
+        }
+
+        let items = itemsValue.compactMap { if case .string(let s) = $0 { return s } else { return nil } }
+
+        try await thingsManager.setChecklistItems(todoId: id, items: items)
+
+        return """
+        {
+            "success": true,
+            "message": "Set \(items.count) checklist item(s) for to-do (replaced existing)",
+            "warning": "All previous checklist items have been replaced",
+            "note": "Due to API limitations, checklist items cannot be read back. Open Things 3 to verify."
+        }
+        """
+    }
+
     // MARK: - JSON Formatting Helpers
 
     private func formatTodosAsJSON(_ todos: [Todo]) -> String {
@@ -1104,6 +1427,17 @@ class CheThingsMCPServer {
         guard let data = try? encoder.encode(tags),
               let json = String(data: data, encoding: .utf8) else {
             return "[]"
+        }
+        return json
+    }
+
+    private func formatBatchResultAsJSON(_ result: ThingsManager.BatchResult) -> String {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+
+        guard let data = try? encoder.encode(result),
+              let json = String(data: data, encoding: .utf8) else {
+            return "{}"
         }
         return json
     }
