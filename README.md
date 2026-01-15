@@ -11,7 +11,7 @@
 
 ## Features
 
-- **35 tools** for comprehensive Things 3 management
+- **37 tools** for comprehensive Things 3 management
 - **Native AppleScript** integration for reliable data access
 - **Universal Binary** supporting both Apple Silicon and Intel Macs
 - **Zero dependencies** at runtime - just the binary
@@ -63,7 +63,44 @@ On first use, macOS will prompt for **Automation** permission to control Things 
 
 ---
 
-## All 35 Tools
+## Authentication
+
+Some operations (like checklist management) require a Things3 auth token.
+
+### Getting your token
+
+1. Open **Things3** → **Settings** (⌘,)
+2. Go to **General** → **Enable Things URLs**
+3. Click **Manage** and copy your token
+
+### Configuration
+
+**Claude Desktop** (`~/Library/Application Support/Claude/claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "che-things-mcp": {
+      "command": "/usr/local/bin/che-things-mcp",
+      "env": {
+        "THINGS3_AUTH_TOKEN": "your-token-here"
+      }
+    }
+  }
+}
+```
+
+**Claude Code**:
+
+```bash
+claude mcp add che-things-mcp /usr/local/bin/che-things-mcp -e THINGS3_AUTH_TOKEN=your-token
+```
+
+You can also set the token at runtime using the `set_auth_token` tool.
+
+---
+
+## All 37 Tools
 
 <details>
 <summary><b>List Access (7)</b></summary>
@@ -196,6 +233,16 @@ Batch operations return detailed results:
 
 </details>
 
+<details>
+<summary><b>Auth Token (2)</b></summary>
+
+| Tool | Description |
+|------|-------------|
+| `set_auth_token` | Set the Things3 auth token at runtime |
+| `check_auth_status` | Check if auth token is configured |
+
+</details>
+
 ---
 
 ## Usage Examples
@@ -245,6 +292,7 @@ This extension:
 
 | Version | Changes |
 |---------|---------|
+| v0.4.0 | Added auth token support for URL Scheme operations. Added 2 new tools: `set_auth_token`, `check_auth_status`. |
 | v0.3.0 | Added 7 new tools: batch operations (5) and checklist support (2). Improved error messages with specific IDs. Added unit tests. |
 | v0.2.0 | Added 13 new tools: areas, tags, move operations, UI controls, utility operations, advanced queries |
 | v0.1.0 | Initial release with 15 tools |

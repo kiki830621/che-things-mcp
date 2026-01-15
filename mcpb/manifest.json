@@ -2,9 +2,9 @@
   "manifest_version": "0.3",
   "name": "che-things-mcp",
   "display_name": "Things 3 Task Manager",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Native AppleScript integration for Things 3 task management app",
-  "long_description": "A Swift-based MCP server providing 35 tools for managing Things 3 tasks, projects, areas, and tags. Features include inbox, today, upcoming, anytime, someday, and logbook access, full CRUD operations for todos and projects, batch operations for efficient bulk processing, checklist item management (limited API), move operations, UI controls, and advanced queries. Uses native AppleScript for reliable integration. Requires macOS 13.0 or later and Things 3 installed.",
+  "long_description": "A Swift-based MCP server providing 37 tools for managing Things 3 tasks, projects, areas, and tags. Features include inbox, today, upcoming, anytime, someday, and logbook access, full CRUD operations for todos and projects, batch operations for efficient bulk processing, checklist item management with auth token support, move operations, UI controls, and advanced queries. Uses native AppleScript for reliable integration. Requires macOS 13.0 or later and Things 3 installed.",
   "author": {
     "name": "Che Cheng",
     "url": "https://github.com/kiki830621"
@@ -63,7 +63,9 @@
     { "name": "move_todos_batch", "description": "Move multiple to-dos to a different list or project" },
     { "name": "update_todos_batch", "description": "Update multiple to-dos in a single operation" },
     { "name": "add_checklist_items", "description": "Add checklist items to an existing to-do (append mode)" },
-    { "name": "set_checklist_items", "description": "Set checklist items for a to-do (replaces existing)" }
+    { "name": "set_checklist_items", "description": "Set checklist items for a to-do (replaces existing)" },
+    { "name": "set_auth_token", "description": "Set the Things3 auth token at runtime" },
+    { "name": "check_auth_status", "description": "Check if auth token is configured" }
   ],
   "compatibility": {
     "platforms": ["darwin"]

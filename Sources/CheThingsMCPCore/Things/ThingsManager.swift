@@ -112,7 +112,24 @@ public enum ThingsError: Error, LocalizedError {
 
 public actor ThingsManager {
 
-    public init() {}
+    // MARK: - Auth Token
+
+    private var authToken: String?
+
+    public init() {
+        // Read auth token from environment variable
+        self.authToken = ProcessInfo.processInfo.environment["THINGS3_AUTH_TOKEN"]
+    }
+
+    /// Set the auth token at runtime
+    public func setAuthToken(_ token: String?) {
+        self.authToken = token
+    }
+
+    /// Check if auth token is configured
+    public func hasAuthToken() -> Bool {
+        return authToken != nil && !authToken!.isEmpty
+    }
 
     private let dateFormatter: ISO8601DateFormatter = {
         let formatter = ISO8601DateFormatter()
@@ -1122,7 +1139,13 @@ public actor ThingsManager {
             throw ThingsError.urlSchemeError("Failed to encode checklist items")
         }
 
-        let urlString = "things:///update?id=\(todoId)&append-checklist-items=\(encodedItems)"
+        var urlString = "things:///update?id=\(todoId)&append-checklist-items=\(encodedItems)"
+
+        // Add auth token if configured
+        if let token = authToken, !token.isEmpty {
+            urlString += "&auth-token=\(token)"
+        }
+
         guard let url = URL(string: urlString) else {
             throw ThingsError.urlSchemeError("Failed to create URL")
         }
@@ -1138,7 +1161,13 @@ public actor ThingsManager {
             throw ThingsError.urlSchemeError("Failed to encode checklist items")
         }
 
-        let urlString = "things:///update?id=\(todoId)&checklist-items=\(encodedItems)"
+        var urlString = "things:///update?id=\(todoId)&checklist-items=\(encodedItems)"
+
+        // Add auth token if configured
+        if let token = authToken, !token.isEmpty {
+            urlString += "&auth-token=\(token)"
+        }
+
         guard let url = URL(string: urlString) else {
             throw ThingsError.urlSchemeError("Failed to create URL")
         }

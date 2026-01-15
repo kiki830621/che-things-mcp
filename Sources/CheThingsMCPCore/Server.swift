@@ -17,7 +17,7 @@ public class CheThingsMCPServer {
         // Create server with tools capability
         server = Server(
             name: "che-things-mcp",
-            version: "0.3.0",
+            version: "0.4.0",
             capabilities: .init(tools: .init())
         )
 
@@ -667,6 +667,33 @@ public class CheThingsMCPServer {
                     "required": .array([.string("id"), .string("items")])
                 ]),
                 annotations: .init(readOnlyHint: false, destructiveHint: true, openWorldHint: true)
+            ),
+
+            // MARK: - Auth Token Tools
+
+            Tool(
+                name: "set_auth_token",
+                description: "Set the Things3 auth token at runtime. Required for URL Scheme operations (like checklist management). Get your token from Things3 → Settings → General → Enable Things URLs → Manage.",
+                inputSchema: .object([
+                    "type": .string("object"),
+                    "properties": .object([
+                        "token": .object([
+                            "type": .string("string"),
+                            "description": .string("The auth token from Things3 settings")
+                        ])
+                    ]),
+                    "required": .array([.string("token")])
+                ]),
+                annotations: .init(readOnlyHint: false, destructiveHint: false, openWorldHint: false)
+            ),
+            Tool(
+                name: "check_auth_status",
+                description: "Check if Things3 auth token is configured. Returns whether a token is set (via environment variable or runtime).",
+                inputSchema: .object([
+                    "type": .string("object"),
+                    "properties": .object([:])
+                ]),
+                annotations: .init(readOnlyHint: true, destructiveHint: false, openWorldHint: false)
             )
         ]
     }
@@ -781,6 +808,12 @@ public class CheThingsMCPServer {
                 result = try await handleAddChecklistItems(params.arguments)
             case "set_checklist_items":
                 result = try await handleSetChecklistItems(params.arguments)
+
+            // Auth Token
+            case "set_auth_token":
+                result = try await handleSetAuthToken(params.arguments)
+            case "check_auth_status":
+                result = try await handleCheckAuthStatus()
 
             default:
                 return CallTool.Result(content: [.text("Unknown tool: \(params.name)")], isError: true)
@@ -1440,5 +1473,32 @@ public class CheThingsMCPServer {
             return "{}"
         }
         return json
+    }
+
+    // MARK: - Auth Token Handlers
+
+    private func handleSetAuthToken(_ arguments: [String: Value]?) async throws -> String {
+        guard let args = arguments,
+              case let .string(token) = args["token"] else {
+            throw ThingsError.invalidParameter("token is required")
+        }
+
+        await thingsManager.setAuthToken(token)
+        return """
+        {
+          "success": true,
+          "message": "Auth token has been set"
+        }
+        """
+    }
+
+    private func handleCheckAuthStatus() async throws -> String {
+        let hasToken = await thingsManager.hasAuthToken()
+        return """
+        {
+          "configured": \(hasToken),
+          "message": "\(hasToken ? "Auth token is configured" : "No auth token configured. Set via THINGS3_AUTH_TOKEN environment variable or use set_auth_token tool.")"
+        }
+        """
     }
 }
