@@ -54,6 +54,13 @@ chmod +x ~/bin/CheThingsMCP
 claude mcp add --scope user --transport stdio che-things-mcp -- ~/bin/CheThingsMCP
 ```
 
+**CLI Options Explained:**
+| Option | Description |
+|--------|-------------|
+| `--scope user` | Available across all projects (stored in `~/.claude.json`) |
+| `--transport stdio` | Local binary execution via stdin/stdout |
+| `--` | Separator between claude options and the command |
+
 ### Build from Source
 
 ```bash
