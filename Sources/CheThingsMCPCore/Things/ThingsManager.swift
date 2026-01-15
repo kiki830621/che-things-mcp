@@ -133,14 +133,15 @@ public actor ThingsManager {
 
     // MARK: - Localization Helpers
 
-    /// Get the Things3 internal source type for built-in lists
+    /// Get the Things3 internal list ID for built-in lists
     /// This avoids localization issues (e.g., "Today" vs "今天")
-    private func getSourceTypeForList(_ listName: String) -> String? {
+    /// IDs verified via: osascript -e 'tell application "Things3" to get id of every list'
+    private func getListIdForBuiltIn(_ listName: String) -> String? {
         switch listName.lowercased() {
         case "inbox": return "TMInboxListSource"
         case "today": return "TMTodayListSource"
-        case "upcoming": return "TMUpcomingListSource"
-        case "anytime": return "TMAnytimeListSource"
+        case "upcoming": return "TMCalendarListSource"    // NOT TMUpcomingListSource!
+        case "anytime": return "TMNextListSource"         // NOT TMAnytimeListSource!
         case "someday": return "TMSomedayListSource"
         case "logbook": return "TMLogbookListSource"
         default: return nil
@@ -149,8 +150,8 @@ public actor ThingsManager {
 
     /// Get AppleScript list reference string (locale-independent for built-in lists)
     private func getListReference(_ listName: String) -> String {
-        if let sourceType = getSourceTypeForList(listName) {
-            return "list id \"\(sourceType)\""
+        if let listId = getListIdForBuiltIn(listName) {
+            return "list id \"\(listId)\""
         }
         return "list \"\(listName)\""
     }
@@ -399,44 +400,84 @@ public actor ThingsManager {
     // MARK: - Search
 
     public func searchTodos(query: String) async throws -> [Todo] {
+        // Use Swift-layer filtering for reliable UTF-8/Unicode support
+        // AppleScript's "contains" has issues with CJK and special characters
+        let allTodos = try await getAllOpenTodos()
+        let lowerQuery = query.lowercased()
+
+        return allTodos.filter { todo in
+            todo.name.lowercased().contains(lowerQuery) ||
+            (todo.notes?.lowercased().contains(lowerQuery) ?? false)
+        }
+    }
+
+    /// Get all open (non-completed, non-canceled) todos using batch property fetching
+    private func getAllOpenTodos() async throws -> [Todo] {
+        // Use batch property fetching for performance (same optimization as getTodos)
         let script = """
         tell application "Things3"
-            set output to ""
-            set searchResults to to dos whose name contains "\(escapeForAppleScript(query))" or notes contains "\(escapeForAppleScript(query))"
-            repeat with t in searchResults
-                set todoId to id of t
-                set todoName to name of t
-                set todoNotes to notes of t
-                set todoStatus to status of t
-                set todoTags to tag names of t
+            set todoCount to count of (to dos whose status is open)
+            if todoCount = 0 then return ""
 
-                set todoDueDate to ""
+            -- Batch fetch all properties for open todos
+            set allIds to id of (to dos whose status is open)
+            set allNames to name of (to dos whose status is open)
+            set allNotes to notes of (to dos whose status is open)
+            set allStatuses to status of (to dos whose status is open)
+            set allTags to tag names of (to dos whose status is open)
+            set allDueDates to due date of (to dos whose status is open)
+            set allScheduledDates to activation date of (to dos whose status is open)
+            set allCompletionDates to completion date of (to dos whose status is open)
+
+            -- project/area need fallback due to potential errors
+            set allProjects to {}
+            set allAreas to {}
+            set todoItems to (to dos whose status is open)
+            repeat with t in todoItems
+                set projStr to ""
                 try
-                    set todoDueDate to due date of t as string
+                    set projStr to name of project of t
                 end try
+                set end of allProjects to projStr
 
-                set todoScheduledDate to ""
+                set areaStr to ""
                 try
-                    set todoScheduledDate to activation date of t as string
+                    set areaStr to name of area of t
                 end try
-
-                set todoCompletionDate to ""
-                try
-                    set todoCompletionDate to completion date of t as string
-                end try
-
-                set todoProject to ""
-                try
-                    set todoProject to name of project of t
-                end try
-
-                set todoArea to ""
-                try
-                    set todoArea to name of area of t
-                end try
-
-                set output to output & todoId & "|||" & todoName & "|||" & todoNotes & "|||" & todoStatus & "|||" & todoTags & "|||" & todoDueDate & "|||" & todoScheduledDate & "|||" & todoCompletionDate & "|||" & todoProject & "|||" & todoArea & "###"
+                set end of allAreas to areaStr
             end repeat
+
+            -- Build output (only string concatenation, no Apple Events)
+            set output to ""
+            repeat with i from 1 to todoCount
+                set dueStr to ""
+                if item i of allDueDates is not missing value then
+                    set dueStr to (item i of allDueDates) as string
+                end if
+
+                set schedStr to ""
+                if item i of allScheduledDates is not missing value then
+                    set schedStr to (item i of allScheduledDates) as string
+                end if
+
+                set compStr to ""
+                if item i of allCompletionDates is not missing value then
+                    set compStr to (item i of allCompletionDates) as string
+                end if
+
+                set projStr to ""
+                if item i of allProjects is not missing value then
+                    set projStr to item i of allProjects as string
+                end if
+
+                set areaStr to ""
+                if item i of allAreas is not missing value then
+                    set areaStr to item i of allAreas as string
+                end if
+
+                set output to output & (item i of allIds) & "|||" & (item i of allNames) & "|||" & (item i of allNotes) & "|||" & (item i of allStatuses) & "|||" & (item i of allTags) & "|||" & dueStr & "|||" & schedStr & "|||" & compStr & "|||" & projStr & "|||" & areaStr & "###"
+            end repeat
+
             return output
         end tell
         """
@@ -456,6 +497,24 @@ public actor ThingsManager {
         projectName: String? = nil,
         when: String? = nil  // "today", "tomorrow", "evening", "anytime", "someday", or date string
     ) async throws -> Todo {
+        // Validate project exists before attempting to create todo
+        if let projectName = projectName {
+            let checkScript = """
+            tell application "Things3"
+                try
+                    set proj to first project whose name is "\(escapeForAppleScript(projectName))"
+                    return "found"
+                on error
+                    return "not_found"
+                end try
+            end tell
+            """
+            let checkResult = try await executeAppleScript(checkScript)
+            if checkResult.trimmingCharacters(in: .whitespacesAndNewlines) == "not_found" {
+                throw ThingsError.invalidParameter("Project '\(projectName)' not found")
+            }
+        }
+
         var properties = "name:\"\(escapeForAppleScript(name))\""
 
         if let notes = notes {
@@ -467,18 +526,43 @@ public actor ThingsManager {
         }
 
         // Determine where to create the todo
-        var location = ""
+        // Note: Things 3's `make` command does NOT support `in project "..."` or `in list id "..."`
+        // We must create first, then set project or move to list
+        var postCreateStatements: [String] = []
         if let projectName = projectName {
-            location = " in project \"\(escapeForAppleScript(projectName))\""
+            // Set project property after creation
+            postCreateStatements.append("set project of newTodo to project \"\(escapeForAppleScript(projectName))\"")
         } else if let listName = listName {
-            location = " in list \"\(listName)\""
+            // For lists, we need to move after creation
+            if let listId = getListIdForBuiltIn(listName) {
+                // Built-in list: move to list id
+                postCreateStatements.append("move newTodo to list id \"\(listId)\"")
+            } else {
+                // Custom list: try move to list by name
+                postCreateStatements.append("move newTodo to list \"\(escapeForAppleScript(listName))\"")
+            }
+        }
+
+        // Build due date statement with proper date parsing
+        let dueDateStatement: String
+        if let dueDate = dueDate {
+            dueDateStatement = "set due date of newTodo to \(formatDateForAppleScript(dueDate))"
+        } else {
+            dueDateStatement = ""
+        }
+
+        // Build post-create statements
+        if let when = when {
+            postCreateStatements.append(getWhenStatement("newTodo", when))
+        }
+        if !dueDateStatement.isEmpty {
+            postCreateStatements.append(dueDateStatement)
         }
 
         let script = """
         tell application "Things3"
-            set newTodo to make new to do with properties {\(properties)}\(location)
-            \(when != nil ? "schedule newTodo for \(getWhenClause(when!))" : "")
-            \(dueDate != nil ? "set due date of newTodo to date \"\(dueDate!)\"" : "")
+            set newTodo to make new to do with properties {\(properties)}
+            \(postCreateStatements.joined(separator: "\n            "))
             return id of newTodo
         end tell
         """
@@ -525,7 +609,7 @@ public actor ThingsManager {
         let script = """
         tell application "Things3"
             set newProject to make new project with properties {\(properties)}\(location)
-            \(when != nil ? "schedule newProject for \(getWhenClause(when!))" : "")
+            \(when != nil ? getWhenStatement("newProject", when!) : "")
             return id of newProject
         end tell
         """
@@ -565,10 +649,10 @@ public actor ThingsManager {
             updates.append("set tag names of targetTodo to \"\(tags.joined(separator: ", "))\"")
         }
         if let dueDate = dueDate {
-            updates.append("set due date of targetTodo to date \"\(dueDate)\"")
+            updates.append("set due date of targetTodo to \(formatDateForAppleScript(dueDate))")
         }
         if let when = when {
-            updates.append("schedule targetTodo for \(getWhenClause(when))")
+            updates.append(getWhenStatement("targetTodo", when))
         }
 
         guard !updates.isEmpty else {
@@ -998,22 +1082,97 @@ public actor ThingsManager {
             .replacingOccurrences(of: "\"", with: "\\\"")
     }
 
-    private func getWhenClause(_ when: String) -> String {
+    /// Returns an AppleScript statement to schedule an item
+    /// Uses the `schedule <item> for <date>` command (activation date is read-only)
+    /// - Parameters:
+    ///   - varName: The AppleScript variable name (e.g., "newTodo", "targetTodo")
+    ///   - when: The schedule value ("today", "tomorrow", "anytime", "someday", or a date string)
+    /// - Returns: Complete AppleScript statement for scheduling
+    private func getWhenStatement(_ varName: String, _ when: String) -> String {
         switch when.lowercased() {
         case "today":
-            return "date (current date)"
+            // Schedule for current date
+            return "schedule \(varName) for (current date)"
         case "tomorrow":
-            return "date ((current date) + 1 * days)"
+            // Schedule for tomorrow
+            return "schedule \(varName) for ((current date) + 1 * days)"
         case "evening":
-            return "date \"today 6:00 PM\""
+            // Note: Things 3 "evening" is a UI concept, schedule for today
+            return "schedule \(varName) for (current date)"
         case "anytime":
-            return "missing value"
+            // Move to Anytime list (clears schedule)
+            return "move \(varName) to \(getListReference("Anytime"))"
         case "someday":
-            return "\"someday\""
+            // Move to Someday list
+            return "move \(varName) to \(getListReference("Someday"))"
         default:
-            // Assume it's a date string
-            return "date \"\(when)\""
+            // Try to parse as date and schedule
+            if let date = parseDate(when) {
+                let formatter = DateFormatter()
+                formatter.locale = Locale(identifier: "en_US_POSIX")
+                formatter.dateFormat = "yyyy-MM-dd"
+                return "schedule \(varName) for date \"\(formatter.string(from: date))\""
+            }
+            // Fallback: try original string as date
+            return "schedule \(varName) for date \"\(when)\""
         }
+    }
+
+    /// Formats a date string for AppleScript's `date "..."` syntax
+    /// Parses various date formats and outputs in a locale-independent format
+    private func formatDateForAppleScript(_ dateString: String) -> String {
+        if let date = parseDate(dateString) {
+            let formatter = DateFormatter()
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            formatter.dateFormat = "yyyy-MM-dd"
+            return "date \"\(formatter.string(from: date))\""
+        }
+        // Fallback: use original string (may fail for non-English locales)
+        return "date \"\(dateString)\""
+    }
+
+    /// Parse date string using NSDataDetector (locale-independent, supports all system languages)
+    private func parseDate(_ string: String) -> Date? {
+        // 1. Try ISO8601 format first (most reliable)
+        let isoFormatter = ISO8601DateFormatter()
+        isoFormatter.formatOptions = [.withFullDate]
+        if let date = isoFormatter.date(from: string) {
+            return date
+        }
+
+        // 2. Try common formats with POSIX locale (for explicit formats like yyyy-MM-dd)
+        let commonFormats = ["yyyy-MM-dd", "yyyy/MM/dd", "MM/dd/yyyy", "dd/MM/yyyy"]
+        for format in commonFormats {
+            let formatter = DateFormatter()
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            formatter.dateFormat = format
+            if let date = formatter.date(from: string) {
+                return date
+            }
+        }
+
+        // 3. Try current locale's natural date parsing (handles all localized formats)
+        let localFormatter = DateFormatter()
+        localFormatter.locale = Locale.current
+        for style in [DateFormatter.Style.short, .medium, .long, .full] {
+            localFormatter.dateStyle = style
+            localFormatter.timeStyle = .none
+            if let date = localFormatter.date(from: string) {
+                return date
+            }
+        }
+
+        // 4. Use NSDataDetector as final fallback (intelligent date detection)
+        guard let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.date.rawValue) else {
+            return nil
+        }
+        let range = NSRange(string.startIndex..., in: string)
+        if let match = detector.firstMatch(in: string, options: [], range: range),
+           let date = match.date {
+            return date
+        }
+
+        return nil
     }
 
     private func parseTodosFromOutput(_ output: String) -> [Todo] {
