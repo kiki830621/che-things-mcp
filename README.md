@@ -302,6 +302,7 @@ This extension:
 
 | Version | Changes |
 |---------|---------|
+| v1.2.2 | **CLI syntax update.** Updated `claude mcp add` commands with correct `--scope user --transport stdio` syntax. |
 | v1.2.1 | **Documentation & tests.** Updated installation guide to recommend `~/bin/` over cloud-synced folders. Added MCP protocol tests and integration tests. |
 | v1.2.0 | **Performance optimization & MCP fix.** Batch property fetching (29x faster). Fixed MCP event loop blocking - AppleScript now runs on background thread via DispatchQueue. |
 | v1.1.1 | Simplified AppleScript syntax: use `list id` instead of `first list whose source type is`. |
