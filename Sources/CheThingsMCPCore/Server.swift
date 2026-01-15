@@ -17,7 +17,7 @@ public class CheThingsMCPServer {
         // Create server with tools capability
         server = Server(
             name: "che-things-mcp",
-            version: "1.1.1",
+            version: "1.2.0",
             capabilities: .init(tools: .init())
         )
 

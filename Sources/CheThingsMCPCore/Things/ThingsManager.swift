@@ -163,47 +163,66 @@ public actor ThingsManager {
 
     // MARK: - AppleScript Execution
 
-    private func executeAppleScript(_ script: String) throws -> String {
-        var error: NSDictionary?
-        guard let appleScript = NSAppleScript(source: script) else {
-            throw ThingsError.scriptError("Failed to create AppleScript")
-        }
+    // IMPORTANT: AppleScript execution MUST run on a background thread to avoid blocking
+    // the MCP SDK's async event loop. NSAppleScript.executeAndReturnError is synchronous
+    // and will block stdin processing if run on the main thread.
 
-        let result = appleScript.executeAndReturnError(&error)
+    private func executeAppleScript(_ script: String) async throws -> String {
+        // Run AppleScript on a background DispatchQueue to prevent blocking MCP event loop
+        try await withCheckedThrowingContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                var error: NSDictionary?
+                guard let appleScript = NSAppleScript(source: script) else {
+                    continuation.resume(throwing: ThingsError.scriptError("Failed to create AppleScript"))
+                    return
+                }
 
-        if let error = error {
-            let errorMessage = error[NSAppleScript.errorMessage] as? String ?? "Unknown error"
-            if errorMessage.contains("Application isn't running") || errorMessage.contains("Can't get application") {
-                throw ThingsError.thingsNotInstalled
+                let result = appleScript.executeAndReturnError(&error)
+
+                if let error = error {
+                    let errorMessage = error[NSAppleScript.errorMessage] as? String ?? "Unknown error"
+                    if errorMessage.contains("Application isn't running") || errorMessage.contains("Can't get application") {
+                        continuation.resume(throwing: ThingsError.thingsNotInstalled)
+                    } else {
+                        continuation.resume(throwing: ThingsError.scriptError(errorMessage))
+                    }
+                    return
+                }
+
+                continuation.resume(returning: result.stringValue ?? "")
             }
-            throw ThingsError.scriptError(errorMessage)
         }
-
-        return result.stringValue ?? ""
     }
 
-    private func executeAppleScriptReturningList(_ script: String) throws -> [String] {
-        var error: NSDictionary?
-        guard let appleScript = NSAppleScript(source: script) else {
-            throw ThingsError.scriptError("Failed to create AppleScript")
-        }
+    private func executeAppleScriptReturningList(_ script: String) async throws -> [String] {
+        // Run AppleScript on a background DispatchQueue to prevent blocking MCP event loop
+        try await withCheckedThrowingContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                var error: NSDictionary?
+                guard let appleScript = NSAppleScript(source: script) else {
+                    continuation.resume(throwing: ThingsError.scriptError("Failed to create AppleScript"))
+                    return
+                }
 
-        let result = appleScript.executeAndReturnError(&error)
+                let result = appleScript.executeAndReturnError(&error)
 
-        if let error = error {
-            let errorMessage = error[NSAppleScript.errorMessage] as? String ?? "Unknown error"
-            throw ThingsError.scriptError(errorMessage)
-        }
+                if let error = error {
+                    let errorMessage = error[NSAppleScript.errorMessage] as? String ?? "Unknown error"
+                    continuation.resume(throwing: ThingsError.scriptError(errorMessage))
+                    return
+                }
 
-        // Parse list result
-        var items: [String] = []
-        let count = result.numberOfItems
-        for i in 1...count {
-            if let item = result.atIndex(i)?.stringValue {
-                items.append(item)
+                // Parse list result
+                var items: [String] = []
+                let count = result.numberOfItems
+                for i in 1...count {
+                    if let item = result.atIndex(i)?.stringValue {
+                        items.append(item)
+                    }
+                }
+                continuation.resume(returning: items)
             }
         }
-        return items
     }
 
     // MARK: - List Access (Read Operations)
@@ -211,51 +230,115 @@ public actor ThingsManager {
     public func getTodos(from listName: String) async throws -> [Todo] {
         // Use source type for built-in lists to avoid localization issues
         let listRef = getListReference(listName)
+
+        // PERFORMANCE OPTIMIZATION: Use batch property fetching instead of repeat loop
+        // This reduces execution time from ~30s to ~1s for 361 items (29x improvement)
+        // See: docs/APPLESCRIPT_LOCALIZATION.md for details
         let script = """
         tell application "Things3"
+            set todoCount to count of to dos of \(listRef)
+            if todoCount = 0 then return ""
+
+            -- Batch fetch all properties (8 Apple Events instead of M×N)
+            set allIds to id of to dos of \(listRef)
+            set allNames to name of to dos of \(listRef)
+            set allNotes to notes of to dos of \(listRef)
+            set allStatuses to status of to dos of \(listRef)
+            set allTags to tag names of to dos of \(listRef)
+            set allDueDates to due date of to dos of \(listRef)
+            set allScheduledDates to activation date of to dos of \(listRef)
+            set allCompletionDates to completion date of to dos of \(listRef)
+
+            -- project/area need fallback due to potential errors
+            set allProjects to {}
+            set allAreas to {}
+            try
+                set allProjects to name of project of to dos of \(listRef)
+            on error
+                set todoItems to to dos of \(listRef)
+                repeat with t in todoItems
+                    set projStr to ""
+                    try
+                        set projStr to name of project of t
+                    end try
+                    set end of allProjects to projStr
+                end repeat
+            end try
+
+            try
+                set allAreas to name of area of to dos of \(listRef)
+            on error
+                set todoItems to to dos of \(listRef)
+                repeat with t in todoItems
+                    set areaStr to ""
+                    try
+                        set areaStr to name of area of t
+                    end try
+                    set end of allAreas to areaStr
+                end repeat
+            end try
+
+            -- Ensure project/area lists have correct length
+            if (count of allProjects) < todoCount then
+                set todoItems to to dos of \(listRef)
+                set allProjects to {}
+                repeat with t in todoItems
+                    set projStr to ""
+                    try
+                        set projStr to name of project of t
+                    end try
+                    set end of allProjects to projStr
+                end repeat
+            end if
+
+            if (count of allAreas) < todoCount then
+                set todoItems to to dos of \(listRef)
+                set allAreas to {}
+                repeat with t in todoItems
+                    set areaStr to ""
+                    try
+                        set areaStr to name of area of t
+                    end try
+                    set end of allAreas to areaStr
+                end repeat
+            end if
+
+            -- Build output (only string concatenation, no Apple Events)
             set output to ""
-            set todoItems to to dos of \(listRef)
-            repeat with t in todoItems
-                set todoId to id of t
-                set todoName to name of t
-                set todoNotes to notes of t
-                set todoStatus to status of t
-                set todoTags to tag names of t
+            repeat with i from 1 to todoCount
+                set dueStr to ""
+                if item i of allDueDates is not missing value then
+                    set dueStr to (item i of allDueDates) as string
+                end if
 
-                -- Handle dates
-                set todoDueDate to ""
-                try
-                    set todoDueDate to due date of t as string
-                end try
+                set schedStr to ""
+                if item i of allScheduledDates is not missing value then
+                    set schedStr to (item i of allScheduledDates) as string
+                end if
 
-                set todoScheduledDate to ""
-                try
-                    set todoScheduledDate to activation date of t as string
-                end try
+                set compStr to ""
+                if item i of allCompletionDates is not missing value then
+                    set compStr to (item i of allCompletionDates) as string
+                end if
 
-                set todoCompletionDate to ""
-                try
-                    set todoCompletionDate to completion date of t as string
-                end try
+                set projStr to ""
+                if item i of allProjects is not missing value then
+                    set projStr to item i of allProjects as string
+                end if
 
-                -- Handle project/area
-                set todoProject to ""
-                try
-                    set todoProject to name of project of t
-                end try
+                set areaStr to ""
+                if item i of allAreas is not missing value then
+                    set areaStr to item i of allAreas as string
+                end if
 
-                set todoArea to ""
-                try
-                    set todoArea to name of area of t
-                end try
-
-                set output to output & todoId & "|||" & todoName & "|||" & todoNotes & "|||" & todoStatus & "|||" & todoTags & "|||" & todoDueDate & "|||" & todoScheduledDate & "|||" & todoCompletionDate & "|||" & todoProject & "|||" & todoArea & "###"
+                set output to output & (item i of allIds) & "|||" & (item i of allNames) & "|||" & (item i of allNotes) & "|||" & (item i of allStatuses) & "|||" & (item i of allTags) & "|||" & dueStr & "|||" & schedStr & "|||" & compStr & "|||" & projStr & "|||" & areaStr & "###"
             end repeat
+
             return output
         end tell
         """
 
-        let result = try executeAppleScript(script)
+        let result = try await executeAppleScript(script)
         return parseTodosFromOutput(result)
     }
 
@@ -309,7 +392,7 @@ public actor ThingsManager {
         end tell
         """
 
-        let result = try executeAppleScript(script)
+        let result = try await executeAppleScript(script)
         return parseProjectsFromOutput(result)
     }
 
@@ -358,7 +441,7 @@ public actor ThingsManager {
         end tell
         """
 
-        let result = try executeAppleScript(script)
+        let result = try await executeAppleScript(script)
         return parseTodosFromOutput(result)
     }
 
@@ -400,7 +483,7 @@ public actor ThingsManager {
         end tell
         """
 
-        let todoId = try executeAppleScript(script)
+        let todoId = try await executeAppleScript(script)
 
         // Fetch and return the created todo
         return Todo(
@@ -447,7 +530,7 @@ public actor ThingsManager {
         end tell
         """
 
-        let projectId = try executeAppleScript(script)
+        let projectId = try await executeAppleScript(script)
 
         return Project(
             id: projectId.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -499,7 +582,7 @@ public actor ThingsManager {
         end tell
         """
 
-        _ = try executeAppleScript(script)
+        _ = try await executeAppleScript(script)
     }
 
     public func updateProject(
@@ -531,7 +614,7 @@ public actor ThingsManager {
         end tell
         """
 
-        _ = try executeAppleScript(script)
+        _ = try await executeAppleScript(script)
     }
 
     // MARK: - Complete/Delete Operations
@@ -543,7 +626,7 @@ public actor ThingsManager {
             set status of to do id "\(id)" to \(status)
         end tell
         """
-        _ = try executeAppleScript(script)
+        _ = try await executeAppleScript(script)
     }
 
     public func deleteTodo(id: String) async throws {
@@ -554,7 +637,7 @@ public actor ThingsManager {
             delete to do id "\(id)"
         end tell
         """
-        _ = try executeAppleScript(script)
+        _ = try await executeAppleScript(script)
     }
 
     public func deleteProject(id: String) async throws {
@@ -565,7 +648,7 @@ public actor ThingsManager {
             delete project id "\(id)"
         end tell
         """
-        _ = try executeAppleScript(script)
+        _ = try await executeAppleScript(script)
     }
 
     // MARK: - Areas
@@ -584,7 +667,7 @@ public actor ThingsManager {
         end tell
         """
 
-        let result = try executeAppleScript(script)
+        let result = try await executeAppleScript(script)
         return parseAreasFromOutput(result)
     }
 
@@ -603,7 +686,7 @@ public actor ThingsManager {
         end tell
         """
 
-        let result = try executeAppleScript(script)
+        let result = try await executeAppleScript(script)
         return parseTagsFromOutput(result)
     }
 
@@ -627,7 +710,7 @@ public actor ThingsManager {
             \(moveCommand)
         end tell
         """
-        _ = try executeAppleScript(script)
+        _ = try await executeAppleScript(script)
     }
 
     public func moveProject(id: String, toArea: String) async throws {
@@ -636,7 +719,7 @@ public actor ThingsManager {
             move project id "\(id)" to area "\(escapeForAppleScript(toArea))"
         end tell
         """
-        _ = try executeAppleScript(script)
+        _ = try await executeAppleScript(script)
     }
 
     // MARK: - UI Operations
@@ -647,7 +730,7 @@ public actor ThingsManager {
             show to do id "\(id)"
         end tell
         """
-        _ = try executeAppleScript(script)
+        _ = try await executeAppleScript(script)
     }
 
     public func showProject(id: String) async throws {
@@ -656,7 +739,7 @@ public actor ThingsManager {
             show project id "\(id)"
         end tell
         """
-        _ = try executeAppleScript(script)
+        _ = try await executeAppleScript(script)
     }
 
     public func showList(name: String) async throws {
@@ -667,7 +750,7 @@ public actor ThingsManager {
             show \(listRef)
         end tell
         """
-        _ = try executeAppleScript(script)
+        _ = try await executeAppleScript(script)
     }
 
     public func showQuickEntry(
@@ -695,7 +778,7 @@ public actor ThingsManager {
             \(showCommand)
         end tell
         """
-        _ = try executeAppleScript(script)
+        _ = try await executeAppleScript(script)
     }
 
     // MARK: - Utility Operations
@@ -706,7 +789,7 @@ public actor ThingsManager {
             empty trash
         end tell
         """
-        _ = try executeAppleScript(script)
+        _ = try await executeAppleScript(script)
     }
 
     public func getSelectedTodos() async throws -> [Todo] {
@@ -752,7 +835,7 @@ public actor ThingsManager {
         end tell
         """
 
-        let result = try executeAppleScript(script)
+        let result = try await executeAppleScript(script)
         return parseTodosFromOutput(result)
     }
 
@@ -810,7 +893,7 @@ public actor ThingsManager {
         end tell
         """
 
-        let result = try executeAppleScript(script)
+        let result = try await executeAppleScript(script)
         return parseTodosFromOutput(result)
     }
 
@@ -866,7 +949,7 @@ public actor ThingsManager {
         end tell
         """
 
-        let result = try executeAppleScript(script)
+        let result = try await executeAppleScript(script)
         return parseTodosFromOutput(result)
     }
 
@@ -903,7 +986,7 @@ public actor ThingsManager {
         end tell
         """
 
-        let result = try executeAppleScript(script)
+        let result = try await executeAppleScript(script)
         return parseProjectsFromOutput(result)
     }
 
