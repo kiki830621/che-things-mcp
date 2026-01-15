@@ -521,18 +521,22 @@ public actor ThingsManager {
     }
 
     public func deleteTodo(id: String) async throws {
+        // Use 'delete' command instead of moving to localized "Trash" list
+        // This works regardless of Things3 language settings
         let script = """
         tell application "Things3"
-            move to do id "\(id)" to list "Trash"
+            delete to do id "\(id)"
         end tell
         """
         _ = try executeAppleScript(script)
     }
 
     public func deleteProject(id: String) async throws {
+        // Use 'delete' command instead of moving to localized "Trash" list
+        // This works regardless of Things3 language settings
         let script = """
         tell application "Things3"
-            move project id "\(id)" to list "Trash"
+            delete project id "\(id)"
         end tell
         """
         _ = try executeAppleScript(script)

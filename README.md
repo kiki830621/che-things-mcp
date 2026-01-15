@@ -292,6 +292,8 @@ This extension:
 
 | Version | Changes |
 |---------|---------|
+| v1.0.0 | **First stable release.** 37 tools with full i18n support. Fixed localization bug for non-English systems. |
+| v0.4.1 | Fixed delete operations failing on localized Things3 (Chinese, Japanese, etc.) |
 | v0.4.0 | Added auth token support for URL Scheme operations. Added 2 new tools: `set_auth_token`, `check_auth_status`. |
 | v0.3.0 | Added 7 new tools: batch operations (5) and checklist support (2). Improved error messages with specific IDs. Added unit tests. |
 | v0.2.0 | Added 13 new tools: areas, tags, move operations, UI controls, utility operations, advanced queries |
