@@ -64,10 +64,12 @@ public struct Area: Codable {
 public struct Tag: Codable {
     public let id: String
     public let name: String
+    public let parentTagName: String?
 
-    public init(id: String, name: String) {
+    public init(id: String, name: String, parentTagName: String? = nil) {
         self.id = id
         self.name = name
+        self.parentTagName = parentTagName
     }
 }
 
@@ -713,6 +715,57 @@ public actor ThingsManager {
         _ = try await executeAppleScript(script)
     }
 
+    public func cancelTodo(id: String, canceled: Bool = true) async throws {
+        let status = canceled ? "canceled" : "open"
+        let script = """
+        tell application "Things3"
+            set status of to do id "\(id)" to \(status)
+        end tell
+        """
+        _ = try await executeAppleScript(script)
+    }
+
+    public func cancelProject(id: String, canceled: Bool = true) async throws {
+        let status = canceled ? "canceled" : "open"
+        let script = """
+        tell application "Things3"
+            set status of project id "\(id)" to \(status)
+        end tell
+        """
+        _ = try await executeAppleScript(script)
+    }
+
+    // MARK: - Edit Operations (Open in Things UI)
+
+    public func editTodo(id: String) async throws {
+        let script = """
+        tell application "Things3"
+            edit to do id "\(id)"
+        end tell
+        """
+        _ = try await executeAppleScript(script)
+    }
+
+    public func editProject(id: String) async throws {
+        let script = """
+        tell application "Things3"
+            edit project id "\(id)"
+        end tell
+        """
+        _ = try await executeAppleScript(script)
+    }
+
+    // MARK: - Log Completed
+
+    public func logCompletedNow() async throws {
+        let script = """
+        tell application "Things3"
+            log completed now
+        end tell
+        """
+        _ = try await executeAppleScript(script)
+    }
+
     public func deleteTodo(id: String) async throws {
         // Use 'delete' command instead of moving to localized "Trash" list
         // This works regardless of Things3 language settings
@@ -755,6 +808,73 @@ public actor ThingsManager {
         return parseAreasFromOutput(result)
     }
 
+    // MARK: - Area Operations
+
+    public func addArea(
+        name: String,
+        tags: [String]? = nil
+    ) async throws -> Area {
+        var properties = "name:\"\(escapeForAppleScript(name))\""
+
+        if let tags = tags, !tags.isEmpty {
+            properties += ", tag names:\"\(tags.joined(separator: ", "))\""
+        }
+
+        let script = """
+        tell application "Things3"
+            set newArea to make new area with properties {\(properties)}
+            return id of newArea
+        end tell
+        """
+
+        let areaId = try await executeAppleScript(script)
+
+        return Area(
+            id: areaId.trimmingCharacters(in: .whitespacesAndNewlines),
+            name: name,
+            tagNames: tags ?? []
+        )
+    }
+
+    public func updateArea(
+        id: String,
+        name: String? = nil,
+        tags: [String]? = nil
+    ) async throws {
+        var updates: [String] = []
+
+        if let name = name {
+            updates.append("set name of targetArea to \"\(escapeForAppleScript(name))\"")
+        }
+        if let tags = tags {
+            updates.append("set tag names of targetArea to \"\(tags.joined(separator: ", "))\"")
+        }
+
+        guard !updates.isEmpty else {
+            throw ThingsError.invalidParameter("No updates specified")
+        }
+
+        let script = """
+        tell application "Things3"
+            set targetArea to area id "\(id)"
+            \(updates.joined(separator: "\n            "))
+        end tell
+        """
+
+        _ = try await executeAppleScript(script)
+    }
+
+    public func deleteArea(id: String) async throws {
+        // Note: When deleting an area, the area itself is not moved to Trash,
+        // but its children (projects and to-dos) will be moved to Trash
+        let script = """
+        tell application "Things3"
+            delete area id "\(id)"
+        end tell
+        """
+        _ = try await executeAppleScript(script)
+    }
+
     // MARK: - Tags
 
     public func getTags() async throws -> [Tag] {
@@ -764,7 +884,11 @@ public actor ThingsManager {
             repeat with t in tags
                 set tagId to id of t
                 set tagName to name of t
-                set output to output & tagId & "|||" & tagName & "###"
+                set parentName to ""
+                try
+                    set parentName to name of parent tag of t
+                end try
+                set output to output & tagId & "|||" & tagName & "|||" & parentName & "###"
             end repeat
             return output
         end tell
@@ -772,6 +896,82 @@ public actor ThingsManager {
 
         let result = try await executeAppleScript(script)
         return parseTagsFromOutput(result)
+    }
+
+    // MARK: - Tag Operations
+
+    public func addTag(
+        name: String,
+        parentTagName: String? = nil
+    ) async throws -> Tag {
+        var script: String
+
+        if let parentName = parentTagName {
+            script = """
+            tell application "Things3"
+                set parentT to tag "\(escapeForAppleScript(parentName))"
+                set newTag to make new tag with properties {name:"\(escapeForAppleScript(name))", parent tag:parentT}
+                return id of newTag
+            end tell
+            """
+        } else {
+            script = """
+            tell application "Things3"
+                set newTag to make new tag with properties {name:"\(escapeForAppleScript(name))"}
+                return id of newTag
+            end tell
+            """
+        }
+
+        let tagId = try await executeAppleScript(script)
+
+        return Tag(
+            id: tagId.trimmingCharacters(in: .whitespacesAndNewlines),
+            name: name,
+            parentTagName: parentTagName
+        )
+    }
+
+    public func updateTag(
+        id: String,
+        name: String? = nil,
+        parentTagName: String? = nil
+    ) async throws {
+        var updates: [String] = []
+
+        if let name = name {
+            updates.append("set name of targetTag to \"\(escapeForAppleScript(name))\"")
+        }
+        if let parentName = parentTagName {
+            if parentName.isEmpty {
+                // Remove parent tag (make it a top-level tag)
+                updates.append("set parent tag of targetTag to missing value")
+            } else {
+                updates.append("set parent tag of targetTag to tag \"\(escapeForAppleScript(parentName))\"")
+            }
+        }
+
+        guard !updates.isEmpty else {
+            throw ThingsError.invalidParameter("No updates specified")
+        }
+
+        let script = """
+        tell application "Things3"
+            set targetTag to tag id "\(id)"
+            \(updates.joined(separator: "\n            "))
+        end tell
+        """
+
+        _ = try await executeAppleScript(script)
+    }
+
+    public func deleteTag(id: String) async throws {
+        let script = """
+        tell application "Things3"
+            delete tag id "\(id)"
+        end tell
+        """
+        _ = try await executeAppleScript(script)
     }
 
     // MARK: - Move Operations
@@ -1244,7 +1444,8 @@ public actor ThingsManager {
 
             return Tag(
                 id: parts[0],
-                name: parts[1]
+                name: parts[1],
+                parentTagName: parts.count >= 3 && !parts[2].isEmpty ? parts[2] : nil
             )
         }
     }

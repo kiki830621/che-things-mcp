@@ -17,7 +17,7 @@ public class CheThingsMCPServer {
         // Create server with tools capability
         server = Server(
             name: "che-things-mcp",
-            version: "1.2.0",
+            version: "1.3.0",
             capabilities: .init(tools: .init())
         )
 
@@ -307,7 +307,7 @@ public class CheThingsMCPServer {
                 annotations: .init(readOnlyHint: false, destructiveHint: true, openWorldHint: false)
             ),
 
-            // === Areas & Tags (2) ===
+            // === Areas & Tags (8) ===
             Tool(
                 name: "get_areas",
                 description: "Get all areas. Areas are used to organize projects and to-dos by life areas (e.g., Work, Personal).",
@@ -318,13 +318,129 @@ public class CheThingsMCPServer {
                 annotations: .init(readOnlyHint: true, openWorldHint: false)
             ),
             Tool(
+                name: "add_area",
+                description: "Create a new area in Things 3. Areas are the highest-level organizational unit for grouping projects and to-dos.",
+                inputSchema: .object([
+                    "type": .string("object"),
+                    "properties": .object([
+                        "name": .object([
+                            "type": .string("string"),
+                            "description": .string("The name of the area")
+                        ]),
+                        "tags": .object([
+                            "type": .string("array"),
+                            "items": .object(["type": .string("string")]),
+                            "description": .string("Optional list of tag names")
+                        ])
+                    ]),
+                    "required": .array([.string("name")])
+                ]),
+                annotations: .init(readOnlyHint: false, destructiveHint: false, openWorldHint: false)
+            ),
+            Tool(
+                name: "update_area",
+                description: "Update an existing area.",
+                inputSchema: .object([
+                    "type": .string("object"),
+                    "properties": .object([
+                        "id": .object([
+                            "type": .string("string"),
+                            "description": .string("The area identifier")
+                        ]),
+                        "name": .object([
+                            "type": .string("string"),
+                            "description": .string("New name")
+                        ]),
+                        "tags": .object([
+                            "type": .string("array"),
+                            "items": .object(["type": .string("string")]),
+                            "description": .string("New tags (replaces existing)")
+                        ])
+                    ]),
+                    "required": .array([.string("id")])
+                ]),
+                annotations: .init(readOnlyHint: false, destructiveHint: false, openWorldHint: false)
+            ),
+            Tool(
+                name: "delete_area",
+                description: "Delete an area. Note: The area itself is not moved to Trash, but its children (projects and to-dos) will be.",
+                inputSchema: .object([
+                    "type": .string("object"),
+                    "properties": .object([
+                        "id": .object([
+                            "type": .string("string"),
+                            "description": .string("The area identifier")
+                        ])
+                    ]),
+                    "required": .array([.string("id")])
+                ]),
+                annotations: .init(readOnlyHint: false, destructiveHint: true, openWorldHint: false)
+            ),
+            Tool(
                 name: "get_tags",
-                description: "Get all tags. Tags are labels that can be applied to to-dos and projects.",
+                description: "Get all tags. Tags are labels that can be applied to to-dos and projects. Includes parent tag information for hierarchical tags.",
                 inputSchema: .object([
                     "type": .string("object"),
                     "properties": .object([:])
                 ]),
                 annotations: .init(readOnlyHint: true, openWorldHint: false)
+            ),
+            Tool(
+                name: "add_tag",
+                description: "Create a new tag in Things 3. Tags can be nested under parent tags for hierarchical organization.",
+                inputSchema: .object([
+                    "type": .string("object"),
+                    "properties": .object([
+                        "name": .object([
+                            "type": .string("string"),
+                            "description": .string("The name of the tag")
+                        ]),
+                        "parent_tag": .object([
+                            "type": .string("string"),
+                            "description": .string("Optional parent tag name for nested tags")
+                        ])
+                    ]),
+                    "required": .array([.string("name")])
+                ]),
+                annotations: .init(readOnlyHint: false, destructiveHint: false, openWorldHint: false)
+            ),
+            Tool(
+                name: "update_tag",
+                description: "Update an existing tag. Can rename or change parent tag.",
+                inputSchema: .object([
+                    "type": .string("object"),
+                    "properties": .object([
+                        "id": .object([
+                            "type": .string("string"),
+                            "description": .string("The tag identifier")
+                        ]),
+                        "name": .object([
+                            "type": .string("string"),
+                            "description": .string("New name")
+                        ]),
+                        "parent_tag": .object([
+                            "type": .string("string"),
+                            "description": .string("New parent tag name (empty string to make top-level)")
+                        ])
+                    ]),
+                    "required": .array([.string("id")])
+                ]),
+                annotations: .init(readOnlyHint: false, destructiveHint: false, openWorldHint: false)
+            ),
+            Tool(
+                name: "delete_tag",
+                description: "Delete a tag from Things 3.",
+                inputSchema: .object([
+                    "type": .string("object"),
+                    "properties": .object([
+                        "id": .object([
+                            "type": .string("string"),
+                            "description": .string("The tag identifier")
+                        ])
+                    ]),
+                    "required": .array([.string("id")])
+                ]),
+                annotations: .init(readOnlyHint: false, destructiveHint: true, openWorldHint: false)
             ),
 
             // === Move Operations (2) ===
@@ -436,7 +552,79 @@ public class CheThingsMCPServer {
                 annotations: .init(readOnlyHint: true, openWorldHint: true)
             ),
 
-            // === Utility Operations (2) ===
+            // === Cancel Operations (2) ===
+            Tool(
+                name: "cancel_todo",
+                description: "Cancel a to-do (different from completing or deleting). Canceled items appear struck-through.",
+                inputSchema: .object([
+                    "type": .string("object"),
+                    "properties": .object([
+                        "id": .object([
+                            "type": .string("string"),
+                            "description": .string("The to-do identifier")
+                        ]),
+                        "canceled": .object([
+                            "type": .string("boolean"),
+                            "description": .string("true to cancel, false to reopen. Defaults to true.")
+                        ])
+                    ]),
+                    "required": .array([.string("id")])
+                ]),
+                annotations: .init(readOnlyHint: false, destructiveHint: false, openWorldHint: false)
+            ),
+            Tool(
+                name: "cancel_project",
+                description: "Cancel a project (different from completing or deleting). Canceled items appear struck-through.",
+                inputSchema: .object([
+                    "type": .string("object"),
+                    "properties": .object([
+                        "id": .object([
+                            "type": .string("string"),
+                            "description": .string("The project identifier")
+                        ]),
+                        "canceled": .object([
+                            "type": .string("boolean"),
+                            "description": .string("true to cancel, false to reopen. Defaults to true.")
+                        ])
+                    ]),
+                    "required": .array([.string("id")])
+                ]),
+                annotations: .init(readOnlyHint: false, destructiveHint: false, openWorldHint: false)
+            ),
+
+            // === Edit Operations (2) ===
+            Tool(
+                name: "edit_todo",
+                description: "Open a to-do in Things 3's edit view for manual editing.",
+                inputSchema: .object([
+                    "type": .string("object"),
+                    "properties": .object([
+                        "id": .object([
+                            "type": .string("string"),
+                            "description": .string("The to-do identifier")
+                        ])
+                    ]),
+                    "required": .array([.string("id")])
+                ]),
+                annotations: .init(readOnlyHint: true, openWorldHint: true)
+            ),
+            Tool(
+                name: "edit_project",
+                description: "Open a project in Things 3's edit view for manual editing.",
+                inputSchema: .object([
+                    "type": .string("object"),
+                    "properties": .object([
+                        "id": .object([
+                            "type": .string("string"),
+                            "description": .string("The project identifier")
+                        ])
+                    ]),
+                    "required": .array([.string("id")])
+                ]),
+                annotations: .init(readOnlyHint: true, openWorldHint: true)
+            ),
+
+            // === Utility Operations (3) ===
             Tool(
                 name: "empty_trash",
                 description: "Permanently delete all items in the Trash. This action cannot be undone.",
@@ -445,6 +633,15 @@ public class CheThingsMCPServer {
                     "properties": .object([:])
                 ]),
                 annotations: .init(readOnlyHint: false, destructiveHint: true, openWorldHint: false)
+            ),
+            Tool(
+                name: "log_completed_now",
+                description: "Move all completed to-dos from Today to the Logbook immediately, instead of waiting until the end of the day.",
+                inputSchema: .object([
+                    "type": .string("object"),
+                    "properties": .object([:])
+                ]),
+                annotations: .init(readOnlyHint: false, destructiveHint: false, openWorldHint: false)
             ),
             Tool(
                 name: "get_selected_todos",
@@ -760,8 +957,20 @@ public class CheThingsMCPServer {
             // Areas & Tags
             case "get_areas":
                 result = try await handleGetAreas()
+            case "add_area":
+                result = try await handleAddArea(params.arguments)
+            case "update_area":
+                result = try await handleUpdateArea(params.arguments)
+            case "delete_area":
+                result = try await handleDeleteArea(params.arguments)
             case "get_tags":
                 result = try await handleGetTags()
+            case "add_tag":
+                result = try await handleAddTag(params.arguments)
+            case "update_tag":
+                result = try await handleUpdateTag(params.arguments)
+            case "delete_tag":
+                result = try await handleDeleteTag(params.arguments)
 
             // Move Operations
             case "move_todo":
@@ -779,9 +988,23 @@ public class CheThingsMCPServer {
             case "show_quick_entry":
                 result = try await handleShowQuickEntry(params.arguments)
 
+            // Cancel Operations
+            case "cancel_todo":
+                result = try await handleCancelTodo(params.arguments)
+            case "cancel_project":
+                result = try await handleCancelProject(params.arguments)
+
+            // Edit Operations
+            case "edit_todo":
+                result = try await handleEditTodo(params.arguments)
+            case "edit_project":
+                result = try await handleEditProject(params.arguments)
+
             // Utility Operations
             case "empty_trash":
                 result = try await handleEmptyTrash()
+            case "log_completed_now":
+                result = try await handleLogCompletedNow()
             case "get_selected_todos":
                 result = try await handleGetSelectedTodos()
 
@@ -1077,9 +1300,129 @@ public class CheThingsMCPServer {
         return formatAreasAsJSON(areas)
     }
 
+    private func handleAddArea(_ arguments: [String: Value]?) async throws -> String {
+        guard let args = arguments,
+              case .string(let name) = args["name"] else {
+            throw ThingsError.invalidParameter("name is required")
+        }
+
+        var tags: [String]? = nil
+        if case .array(let t) = args["tags"] {
+            tags = t.compactMap { if case .string(let s) = $0 { return s } else { return nil } }
+        }
+
+        let area = try await thingsManager.addArea(name: name, tags: tags)
+
+        return """
+        {
+            "success": true,
+            "message": "Area created successfully",
+            "area": \(formatAreaAsJSON(area))
+        }
+        """
+    }
+
+    private func handleUpdateArea(_ arguments: [String: Value]?) async throws -> String {
+        guard let args = arguments,
+              case .string(let id) = args["id"] else {
+            throw ThingsError.invalidParameter("id is required")
+        }
+
+        var name: String? = nil
+        if case .string(let n) = args["name"] { name = n }
+
+        var tags: [String]? = nil
+        if case .array(let t) = args["tags"] {
+            tags = t.compactMap { if case .string(let s) = $0 { return s } else { return nil } }
+        }
+
+        try await thingsManager.updateArea(id: id, name: name, tags: tags)
+
+        return """
+        {
+            "success": true,
+            "message": "Area updated successfully"
+        }
+        """
+    }
+
+    private func handleDeleteArea(_ arguments: [String: Value]?) async throws -> String {
+        guard let args = arguments,
+              case .string(let id) = args["id"] else {
+            throw ThingsError.invalidParameter("id is required")
+        }
+
+        try await thingsManager.deleteArea(id: id)
+
+        return """
+        {
+            "success": true,
+            "message": "Area deleted (children moved to Trash)"
+        }
+        """
+    }
+
     private func handleGetTags() async throws -> String {
         let tags = try await thingsManager.getTags()
         return formatTagsAsJSON(tags)
+    }
+
+    private func handleAddTag(_ arguments: [String: Value]?) async throws -> String {
+        guard let args = arguments,
+              case .string(let name) = args["name"] else {
+            throw ThingsError.invalidParameter("name is required")
+        }
+
+        var parentTag: String? = nil
+        if case .string(let p) = args["parent_tag"] { parentTag = p }
+
+        let tag = try await thingsManager.addTag(name: name, parentTagName: parentTag)
+
+        return """
+        {
+            "success": true,
+            "message": "Tag created successfully",
+            "tag": \(formatTagAsJSON(tag))
+        }
+        """
+    }
+
+    private func handleUpdateTag(_ arguments: [String: Value]?) async throws -> String {
+        guard let args = arguments,
+              case .string(let id) = args["id"] else {
+            throw ThingsError.invalidParameter("id is required")
+        }
+
+        var name: String? = nil
+        if case .string(let n) = args["name"] { name = n }
+
+        var parentTag: String? = nil
+        if case .string(let p) = args["parent_tag"] { parentTag = p }
+
+        try await thingsManager.updateTag(id: id, name: name, parentTagName: parentTag)
+
+        return """
+        {
+            "success": true,
+            "message": "Tag updated successfully"
+        }
+        """
+    }
+
+    private func handleDeleteTag(_ arguments: [String: Value]?) async throws -> String {
+        guard let args = arguments,
+              case .string(let id) = args["id"] else {
+            throw ThingsError.invalidParameter("id is required")
+        }
+
+        try await thingsManager.deleteTag(id: id)
+
+        return """
+        {
+            "success": true,
+            "message": "Tag deleted"
+        }
+        """
     }
 
     // MARK: - Move Operation Handlers
@@ -1193,6 +1536,80 @@ public class CheThingsMCPServer {
         """
     }
 
+    // MARK: - Cancel Operation Handlers
+
+    private func handleCancelTodo(_ arguments: [String: Value]?) async throws -> String {
+        guard let args = arguments,
+              case .string(let id) = args["id"] else {
+            throw ThingsError.invalidParameter("id is required")
+        }
+
+        var canceled = true
+        if case .bool(let c) = args["canceled"] { canceled = c }
+
+        try await thingsManager.cancelTodo(id: id, canceled: canceled)
+
+        return """
+        {
+            "success": true,
+            "message": "To-do marked as \(canceled ? "canceled" : "open")"
+        }
+        """
+    }
+
+    private func handleCancelProject(_ arguments: [String: Value]?) async throws -> String {
+        guard let args = arguments,
+              case .string(let id) = args["id"] else {
+            throw ThingsError.invalidParameter("id is required")
+        }
+
+        var canceled = true
+        if case .bool(let c) = args["canceled"] { canceled = c }
+
+        try await thingsManager.cancelProject(id: id, canceled: canceled)
+
+        return """
+        {
+            "success": true,
+            "message": "Project marked as \(canceled ? "canceled" : "open")"
+        }
+        """
+    }
+
+    // MARK: - Edit Operation Handlers
+
+    private func handleEditTodo(_ arguments: [String: Value]?) async throws -> String {
+        guard let args = arguments,
+              case .string(let id) = args["id"] else {
+            throw ThingsError.invalidParameter("id is required")
+        }
+
+        try await thingsManager.editTodo(id: id)
+
+        return """
+        {
+            "success": true,
+            "message": "To-do edit view opened in Things 3"
+        }
+        """
+    }
+
+    private func handleEditProject(_ arguments: [String: Value]?) async throws -> String {
+        guard let args = arguments,
+              case .string(let id) = args["id"] else {
+            throw ThingsError.invalidParameter("id is required")
+        }
+
+        try await thingsManager.editProject(id: id)
+
+        return """
+        {
+            "success": true,
+            "message": "Project edit view opened in Things 3"
+        }
+        """
+    }
+
     // MARK: - Utility Operation Handlers
 
     private func handleEmptyTrash() async throws -> String {
@@ -1202,6 +1619,17 @@ public class CheThingsMCPServer {
         {
             "success": true,
             "message": "Trash has been emptied"
+        }
+        """
+    }
+
+    private func handleLogCompletedNow() async throws -> String {
+        try await thingsManager.logCompletedNow()
+
+        return """
+        {
+            "success": true,
+            "message": "Completed items moved to Logbook"
         }
         """
     }
@@ -1455,6 +1883,17 @@ public class CheThingsMCPServer {
         return json
     }
 
+    private func formatAreaAsJSON(_ area: Area) -> String {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+
+        guard let data = try? encoder.encode(area),
+              let json = String(data: data, encoding: .utf8) else {
+            return "{}"
+        }
+        return json
+    }
+
     private func formatTagsAsJSON(_ tags: [Tag]) -> String {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -1462,6 +1901,17 @@ public class CheThingsMCPServer {
         guard let data = try? encoder.encode(tags),
               let json = String(data: data, encoding: .utf8) else {
             return "[]"
+        }
+        return json
+    }
+
+    private func formatTagAsJSON(_ tag: Tag) -> String {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+
+        guard let data = try? encoder.encode(tag),
+              let json = String(data: data, encoding: .utf8) else {
+            return "{}"
         }
         return json
     }
