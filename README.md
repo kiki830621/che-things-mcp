@@ -34,7 +34,7 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 {
   "mcpServers": {
     "che-things-mcp": {
-      "command": "/usr/local/bin/che-things-mcp"
+      "command": "/Users/YOUR_USERNAME/bin/CheThingsMCP"
     }
   }
 }
@@ -43,21 +43,29 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 ### For Claude Code (CLI)
 
 ```bash
+# Create ~/bin if it doesn't exist
+mkdir -p ~/bin
+
 # Download the latest release
-curl -L https://github.com/kiki830621/che-things-mcp/releases/latest/download/CheThingsMCP -o /usr/local/bin/che-things-mcp
-chmod +x /usr/local/bin/che-things-mcp
+curl -L https://github.com/kiki830621/che-things-mcp/releases/latest/download/CheThingsMCP -o ~/bin/CheThingsMCP
+chmod +x ~/bin/CheThingsMCP
 
 # Add to Claude Code
-claude mcp add che-things-mcp /usr/local/bin/che-things-mcp
+claude mcp add che-things-mcp ~/bin/CheThingsMCP
 ```
 
-### Build from Source (Optional)
+### Build from Source
 
 ```bash
 git clone https://github.com/kiki830621/che-things-mcp.git
 cd che-things-mcp
 swift build -c release
+
+# Copy binary to ~/bin
+cp .build/release/CheThingsMCP ~/bin/
 ```
+
+> **💡 Tip:** Always install the binary to a local directory like `~/bin/`. Avoid placing it in cloud-synced folders (Dropbox, iCloud, OneDrive) as file sync operations can cause MCP connection timeouts.
 
 On first use, macOS will prompt for **Automation** permission to control Things 3 - click "Allow".
 
@@ -81,7 +89,7 @@ Some operations (like checklist management) require a Things3 auth token.
 {
   "mcpServers": {
     "che-things-mcp": {
-      "command": "/usr/local/bin/che-things-mcp",
+      "command": "/Users/YOUR_USERNAME/bin/CheThingsMCP",
       "env": {
         "THINGS3_AUTH_TOKEN": "your-token-here"
       }
@@ -93,7 +101,7 @@ Some operations (like checklist management) require a Things3 auth token.
 **Claude Code**:
 
 ```bash
-claude mcp add che-things-mcp /usr/local/bin/che-things-mcp -e THINGS3_AUTH_TOKEN=your-token
+claude mcp add che-things-mcp ~/bin/CheThingsMCP -e THINGS3_AUTH_TOKEN=your-token
 ```
 
 You can also set the token at runtime using the `set_auth_token` tool.
@@ -292,6 +300,7 @@ This extension:
 
 | Version | Changes |
 |---------|---------|
+| v1.2.1 | **Documentation & tests.** Updated installation guide to recommend `~/bin/` over cloud-synced folders. Added MCP protocol tests and integration tests. |
 | v1.2.0 | **Performance optimization & MCP fix.** Batch property fetching (29x faster). Fixed MCP event loop blocking - AppleScript now runs on background thread via DispatchQueue. |
 | v1.1.1 | Simplified AppleScript syntax: use `list id` instead of `first list whose source type is`. |
 | v1.1.0 | **Complete i18n support.** Fixed all localization issues for built-in lists (Inbox, Today, Upcoming, etc.) using Things3 internal source types. |
