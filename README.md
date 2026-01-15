@@ -292,6 +292,7 @@ This extension:
 
 | Version | Changes |
 |---------|---------|
+| v1.1.0 | **Complete i18n support.** Fixed all localization issues for built-in lists (Inbox, Today, Upcoming, etc.) using Things3 internal source types. |
 | v1.0.0 | **First stable release.** 37 tools with full i18n support. Fixed localization bug for non-English systems. |
 | v0.4.1 | Fixed delete operations failing on localized Things3 (Chinese, Japanese, etc.) |
 | v0.4.0 | Added auth token support for URL Scheme operations. Added 2 new tools: `set_auth_token`, `check_auth_status`. |

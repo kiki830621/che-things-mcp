@@ -131,6 +131,30 @@ public actor ThingsManager {
         return authToken != nil && !authToken!.isEmpty
     }
 
+    // MARK: - Localization Helpers
+
+    /// Get the Things3 internal source type for built-in lists
+    /// This avoids localization issues (e.g., "Today" vs "今天")
+    private func getSourceTypeForList(_ listName: String) -> String? {
+        switch listName.lowercased() {
+        case "inbox": return "TMInboxListSource"
+        case "today": return "TMTodayListSource"
+        case "upcoming": return "TMUpcomingListSource"
+        case "anytime": return "TMAnytimeListSource"
+        case "someday": return "TMSomedayListSource"
+        case "logbook": return "TMLogbookListSource"
+        default: return nil
+        }
+    }
+
+    /// Get AppleScript list reference string (locale-independent for built-in lists)
+    private func getListReference(_ listName: String) -> String {
+        if let sourceType = getSourceTypeForList(listName) {
+            return "(first list whose source type is \(sourceType))"
+        }
+        return "list \"\(listName)\""
+    }
+
     private let dateFormatter: ISO8601DateFormatter = {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime]
@@ -185,10 +209,12 @@ public actor ThingsManager {
     // MARK: - List Access (Read Operations)
 
     public func getTodos(from listName: String) async throws -> [Todo] {
+        // Use source type for built-in lists to avoid localization issues
+        let listRef = getListReference(listName)
         let script = """
         tell application "Things3"
             set output to ""
-            set todoItems to to dos of list "\(listName)"
+            set todoItems to to dos of \(listRef)
             repeat with t in todoItems
                 set todoId to id of t
                 set todoName to name of t
@@ -589,7 +615,9 @@ public actor ThingsManager {
         if let projectName = toProject {
             moveCommand = "move to do id \"\(id)\" to project \"\(escapeForAppleScript(projectName))\""
         } else if let listName = toList {
-            moveCommand = "move to do id \"\(id)\" to list \"\(listName)\""
+            // Use source type for built-in lists to avoid localization issues
+            let listRef = getListReference(listName)
+            moveCommand = "move to do id \"\(id)\" to \(listRef)"
         } else {
             throw ThingsError.invalidParameter("Either toList or toProject must be specified")
         }
@@ -632,9 +660,11 @@ public actor ThingsManager {
     }
 
     public func showList(name: String) async throws {
+        // Use source type for built-in lists to avoid localization issues
+        let listRef = getListReference(name)
         let script = """
         tell application "Things3"
-            show list "\(name)"
+            show \(listRef)
         end tell
         """
         _ = try executeAppleScript(script)
