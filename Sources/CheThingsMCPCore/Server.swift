@@ -17,7 +17,7 @@ public class CheThingsMCPServer {
         // Create server with tools capability
         server = Server(
             name: "che-things-mcp",
-            version: "1.4.0",
+            version: "1.5.0",
             capabilities: .init(tools: .init())
         )
 
@@ -133,14 +133,18 @@ public class CheThingsMCPServer {
                         ]),
                         "project": .object([
                             "type": .string("string"),
-                            "description": .string("Optional project name to add the to-do to")
+                            "description": .string("Project name to add the to-do to. Use empty string \"\" if intentionally not assigning to a project.")
+                        ]),
+                        "area": .object([
+                            "type": .string("string"),
+                            "description": .string("Optional area name to add the to-do to (for to-dos not in a project)")
                         ]),
                         "when": .object([
                             "type": .string("string"),
                             "description": .string("Schedule: 'today', 'tomorrow', 'evening', 'anytime', 'someday', or a date string")
                         ])
                     ]),
-                    "required": .array([.string("name")])
+                    "required": .array([.string("name"), .string("project")])
                 ]),
                 annotations: .init(readOnlyHint: false, destructiveHint: false, openWorldHint: false)
             ),
@@ -718,7 +722,7 @@ public class CheThingsMCPServer {
                     "properties": .object([
                         "items": .object([
                             "type": .string("array"),
-                            "description": .string("Array of to-do objects to create. Each object can have: name (required), notes, due_date, tags, list, project, when"),
+                            "description": .string("Array of to-do objects to create. Each object requires: name, project (use \"\" if none). Optional: notes, due_date, tags, list, area, when"),
                             "items": .object([
                                 "type": .string("object"),
                                 "properties": .object([
@@ -727,10 +731,11 @@ public class CheThingsMCPServer {
                                     "due_date": .object(["type": .string("string")]),
                                     "tags": .object(["type": .string("array"), "items": .object(["type": .string("string")])]),
                                     "list": .object(["type": .string("string")]),
-                                    "project": .object(["type": .string("string")]),
+                                    "project": .object(["type": .string("string"), "description": .string("Project name. Use empty string if not assigning to a project.")]),
+                                    "area": .object(["type": .string("string")]),
                                     "when": .object(["type": .string("string")])
                                 ]),
-                                "required": .array([.string("name")])
+                                "required": .array([.string("name"), .string("project")])
                             ])
                         ])
                     ]),
@@ -1109,7 +1114,10 @@ public class CheThingsMCPServer {
         if case .string(let l) = args["list"] { listName = l }
 
         var projectName: String? = nil
-        if case .string(let p) = args["project"] { projectName = p }
+        if case .string(let p) = args["project"], !p.isEmpty { projectName = p }
+
+        var areaName: String? = nil
+        if case .string(let a) = args["area"] { areaName = a }
 
         var when: String? = nil
         if case .string(let w) = args["when"] { when = w }
@@ -1121,6 +1129,7 @@ public class CheThingsMCPServer {
             tags: tags,
             listName: listName,
             projectName: projectName,
+            areaName: areaName,
             when: when
         )
 

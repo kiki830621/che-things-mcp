@@ -9,9 +9,9 @@ final class MCPProtocolTests: XCTestCase {
     // MARK: - Tool Count Tests
 
     func testToolCount() async throws {
-        // 根據 README，應該有 37 個工具
+        // v1.5.0: 48 個工具
         let tools = getTools()
-        XCTAssertEqual(tools.count, 37, "Should have exactly 37 tools")
+        XCTAssertEqual(tools.count, 48, "Should have exactly 48 tools")
     }
 
     // MARK: - List Access Tools (7)
@@ -136,12 +136,14 @@ final class MCPProtocolTests: XCTestCase {
         XCTAssertEqual(tool.annotations.destructiveHint, true, "delete_project should be destructive")
     }
 
-    // MARK: - Areas & Tags (2)
+    // MARK: - Areas & Tags (8)
 
     func testAreasAndTagsToolsExist() async throws {
         let tools = getTools()
-        XCTAssertTrue(tools.contains { $0.name == "get_areas" }, "get_areas should exist")
-        XCTAssertTrue(tools.contains { $0.name == "get_tags" }, "get_tags should exist")
+        let areaTagTools = ["get_areas", "add_area", "update_area", "delete_area", "get_tags", "add_tag", "update_tag", "delete_tag"]
+        for toolName in areaTagTools {
+            XCTAssertTrue(tools.contains { $0.name == toolName }, "Tool '\(toolName)' should exist")
+        }
     }
 
     // MARK: - Move Operations (2)
@@ -349,35 +351,39 @@ final class MCPProtocolTests: XCTestCase {
     func testToolCategories() async throws {
         let tools = getTools()
 
-        // Count by category
+        // Count by category (v1.5.0)
         let listAccessCount = ["get_inbox", "get_today", "get_upcoming", "get_anytime", "get_someday", "get_logbook", "get_projects"].filter { name in tools.contains { $0.name == name } }.count
         let taskOpCount = ["add_todo", "update_todo", "complete_todo", "delete_todo", "search_todos"].filter { name in tools.contains { $0.name == name } }.count
         let projectOpCount = ["add_project", "update_project", "delete_project"].filter { name in tools.contains { $0.name == name } }.count
-        let areasTagsCount = ["get_areas", "get_tags"].filter { name in tools.contains { $0.name == name } }.count
+        let areasTagsCount = ["get_areas", "add_area", "update_area", "delete_area", "get_tags", "add_tag", "update_tag", "delete_tag"].filter { name in tools.contains { $0.name == name } }.count
         let moveOpCount = ["move_todo", "move_project"].filter { name in tools.contains { $0.name == name } }.count
         let uiOpCount = ["show_todo", "show_project", "show_list", "show_quick_entry"].filter { name in tools.contains { $0.name == name } }.count
-        let utilityOpCount = ["empty_trash", "get_selected_todos"].filter { name in tools.contains { $0.name == name } }.count
+        let cancelOpCount = ["cancel_todo", "cancel_project"].filter { name in tools.contains { $0.name == name } }.count
+        let editOpCount = ["edit_todo", "edit_project"].filter { name in tools.contains { $0.name == name } }.count
+        let utilityOpCount = ["empty_trash", "log_completed_now", "get_selected_todos"].filter { name in tools.contains { $0.name == name } }.count
         let advancedQueryCount = ["get_todos_in_project", "get_todos_in_area", "get_projects_in_area"].filter { name in tools.contains { $0.name == name } }.count
         let batchOpCount = ["create_todos_batch", "complete_todos_batch", "delete_todos_batch", "move_todos_batch", "update_todos_batch"].filter { name in tools.contains { $0.name == name } }.count
         let checklistOpCount = ["add_checklist_items", "set_checklist_items"].filter { name in tools.contains { $0.name == name } }.count
         let authTokenCount = ["set_auth_token", "check_auth_status"].filter { name in tools.contains { $0.name == name } }.count
 
-        // Verify counts match README
+        // Verify counts
         XCTAssertEqual(listAccessCount, 7, "Should have 7 list access tools")
         XCTAssertEqual(taskOpCount, 5, "Should have 5 task operation tools")
         XCTAssertEqual(projectOpCount, 3, "Should have 3 project operation tools")
-        XCTAssertEqual(areasTagsCount, 2, "Should have 2 areas & tags tools")
+        XCTAssertEqual(areasTagsCount, 8, "Should have 8 areas & tags tools")
         XCTAssertEqual(moveOpCount, 2, "Should have 2 move operation tools")
         XCTAssertEqual(uiOpCount, 4, "Should have 4 UI operation tools")
-        XCTAssertEqual(utilityOpCount, 2, "Should have 2 utility operation tools")
+        XCTAssertEqual(cancelOpCount, 2, "Should have 2 cancel operation tools")
+        XCTAssertEqual(editOpCount, 2, "Should have 2 edit operation tools")
+        XCTAssertEqual(utilityOpCount, 3, "Should have 3 utility operation tools")
         XCTAssertEqual(advancedQueryCount, 3, "Should have 3 advanced query tools")
         XCTAssertEqual(batchOpCount, 5, "Should have 5 batch operation tools")
         XCTAssertEqual(checklistOpCount, 2, "Should have 2 checklist operation tools")
         XCTAssertEqual(authTokenCount, 2, "Should have 2 auth token tools")
 
-        // Total should be 37
-        let total = listAccessCount + taskOpCount + projectOpCount + areasTagsCount + moveOpCount + uiOpCount + utilityOpCount + advancedQueryCount + batchOpCount + checklistOpCount + authTokenCount
-        XCTAssertEqual(total, 37, "Total should be 37 tools")
+        // Total should be 48 (v1.5.0)
+        let total = listAccessCount + taskOpCount + projectOpCount + areasTagsCount + moveOpCount + uiOpCount + cancelOpCount + editOpCount + utilityOpCount + advancedQueryCount + batchOpCount + checklistOpCount + authTokenCount
+        XCTAssertEqual(total, 48, "Total should be 48 tools")
     }
 
     // MARK: - Helper

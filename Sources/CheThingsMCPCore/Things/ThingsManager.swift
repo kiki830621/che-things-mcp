@@ -497,6 +497,7 @@ public actor ThingsManager {
         tags: [String]? = nil,
         listName: String? = nil,
         projectName: String? = nil,
+        areaName: String? = nil,
         when: String? = nil  // "today", "tomorrow", "evening", "anytime", "someday", or date string
     ) async throws -> Todo {
         // Validate project exists before attempting to create todo
@@ -529,11 +530,14 @@ public actor ThingsManager {
 
         // Determine where to create the todo
         // Note: Things 3's `make` command does NOT support `in project "..."` or `in list id "..."`
-        // We must create first, then set project or move to list
+        // We must create first, then set project or move to list/area
         var postCreateStatements: [String] = []
         if let projectName = projectName {
             // Set project property after creation
             postCreateStatements.append("set project of newTodo to project \"\(escapeForAppleScript(projectName))\"")
+        } else if let areaName = areaName {
+            // Move to area (for to-dos not in a project)
+            postCreateStatements.append("move newTodo to area \"\(escapeForAppleScript(areaName))\"")
         } else if let listName = listName {
             // For lists, we need to move after creation
             if let listId = getListIdForBuiltIn(listName) {
@@ -582,7 +586,7 @@ public actor ThingsManager {
             scheduledDate: nil,
             completionDate: nil,
             projectName: projectName,
-            areaName: nil
+            areaName: areaName
         )
     }
 
@@ -1494,13 +1498,20 @@ public actor ThingsManager {
                     throw ThingsError.invalidParameter("name is required at index \(index)")
                 }
 
+                // Handle explicit null pattern: empty string means no project
+                let projectName: String? = {
+                    if let p = item["project"] as? String, !p.isEmpty { return p }
+                    return nil
+                }()
+
                 let todo = try await addTodo(
                     name: name,
                     notes: item["notes"] as? String,
                     dueDate: item["due_date"] as? String,
                     tags: item["tags"] as? [String],
                     listName: item["list"] as? String,
-                    projectName: item["project"] as? String,
+                    projectName: projectName,
+                    areaName: item["area"] as? String,
                     when: item["when"] as? String
                 )
                 results.append(BatchItemResult(index: index, success: true, id: todo.id, error: nil))

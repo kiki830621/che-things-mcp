@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-01-16
+
+### Changed
+- **`project` parameter is now required** for `add_todo` and `create_todos_batch`
+- Implements **Explicit Null Pattern**: Use empty string `""` to explicitly indicate no project assignment
+- This prevents AI from accidentally forgetting to assign tasks to projects
+
+### Technical
+- Empty string for `project` is treated as `nil` internally
+- Added validation in both `handleAddTodo` and `createTodosBatch`
+- See: `docs/AI_ERA_API_DESIGN.md` for the design principle
+
+---
+
+## [1.5.0] - 2026-01-16
+
+### Added
+- **`area` parameter for `add_todo`**: To-dos can now be placed directly into an Area without being in a project
+- **`area` parameter for `create_todos_batch`**: Batch creation now supports area assignment
+- This aligns with the AI_ERA_API_DESIGN principle: consistent API across similar operations
+
+### Changed
+- `add_todo` tool now accepts optional `area` parameter (same as `add_project`)
+- `create_todos_batch` tool items now accept optional `area` field
+
+### Fixed
+- API inconsistency: `add_project` had `area` parameter but `add_todo` didn't
+
 ## [1.4.0] - 2026-01-16
 
 ### Added
@@ -135,6 +163,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Total Tools | New Tools |
 |---------|-------------|-----------|
+| 1.5.0   | 47          | Area support for add_todo |
 | 1.4.0   | 47          | +11 (area, tag, cancel, edit, log) |
 | 1.3.1   | 37          | AppleScript integration fixes |
 | 1.2.2   | 37          | Documentation update |

@@ -333,8 +333,8 @@ final class MCPIntegrationTests: XCTestCase {
             return
         }
 
-        // 驗證工具數量
-        XCTAssertEqual(tools.count, 37, "Should have exactly 37 tools")
+        // 驗證工具數量 (v1.5.0: 48 tools)
+        XCTAssertEqual(tools.count, 48, "Should have exactly 48 tools")
 
         // 驗證每個工具都有必要欄位
         for tool in tools {
