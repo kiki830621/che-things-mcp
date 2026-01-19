@@ -163,6 +163,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Total Tools | New Tools |
 |---------|-------------|-----------|
+| 1.6.0   | 47          | Explicit Null Pattern for project param |
 | 1.5.0   | 47          | Area support for add_todo |
 | 1.4.0   | 47          | +11 (area, tag, cancel, edit, log) |
 | 1.3.1   | 37          | AppleScript integration fixes |
