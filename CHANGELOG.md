@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.1] - 2026-01-19
+
+### Added
+- **Centralized version management**: New `Version.swift` as single source of truth
+- **CLI support**: `--version` / `-v` and `--help` / `-h` command line arguments
+
+### Technical
+- `AppVersion.current` replaces hardcoded version strings
+- Consistent version across CLI, MCP server registration, and documentation
+
+---
+
 ## [1.6.0] - 2026-01-16
 
 ### Changed
@@ -163,6 +175,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Total Tools | New Tools |
 |---------|-------------|-----------|
+| 1.6.1   | 47          | CLI support (--version, --help) |
 | 1.6.0   | 47          | Explicit Null Pattern for project param |
 | 1.5.0   | 47          | Area support for add_todo |
 | 1.4.0   | 47          | +11 (area, tag, cancel, edit, log) |
